@@ -1,0 +1,49 @@
+---
+interface QA {
+  q: string;
+  a: string;
+}
+interface Props {
+  items: QA[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="viva-accordion divide-y divide-border rounded-lab border border-border">
+  {
+    items.map((item, i) => (
+      <div>
+        <h3>
+          <button
+            type="button"
+            class="viva-trigger flex w-full items-center justify-between gap-4 px-4 py-3 text-left font-medium hover:bg-surface"
+            aria-expanded="false"
+            aria-controls={`viva-panel-${i}`}
+          >
+            <span>{item.q}</span>
+            <span class="viva-icon shrink-0 transition-transform" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+        </h3>
+        <div id={`viva-panel-${i}`} class="viva-panel hidden px-4 pb-4 text-text-muted" role="region">
+          <p>{item.a}</p>
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.viva-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      const panelId = btn.getAttribute('aria-controls');
+      const panel = panelId ? document.getElementById(panelId) : null;
+      panel?.classList.toggle('hidden');
+      btn.querySelector('.viva-icon')?.classList.toggle('rotate-180');
+    });
+  });
+</script>

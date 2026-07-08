@@ -1,0 +1,47 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  unit: number;
+  device: '8086' | '8051' | 'ARM';
+  aim: string;
+  objectives?: string[];
+}
+
+const { title, unit, device, aim, objectives = [] } = Astro.props;
+---
+
+<BaseLayout title={title} description={aim}>
+  <article class="mx-auto max-w-(--container-lab) px-4 py-10 sm:px-6">
+    <header class="mb-8 border-b border-border pb-6">
+      <div class="mb-2 flex items-center gap-2">
+        <span class="rounded-full bg-brand-900/5 px-2.5 py-0.5 text-xs font-semibold text-brand-700"
+          >Unit {unit}</span
+        >
+        <span class="rounded-full bg-brand-500/10 px-2.5 py-0.5 text-xs font-semibold text-brand-700"
+          >{device}</span
+        >
+      </div>
+      <h1 class="text-2xl font-bold sm:text-3xl">{title}</h1>
+
+      <div class="mt-4 rounded-lab border border-border bg-surface p-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Aim</h2>
+        <p class="mt-1 text-text">{aim}</p>
+        {
+          objectives.length > 0 && (
+            <ul class="mt-2 list-inside list-disc text-sm text-text-muted">
+              {objectives.map((o) => (
+                <li>{o}</li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+    </header>
+
+    <div class="prose prose-slate max-w-none prose-headings:font-semibold prose-headings:text-text prose-p:text-text prose-li:text-text prose-pre:bg-transparent prose-pre:p-0">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>

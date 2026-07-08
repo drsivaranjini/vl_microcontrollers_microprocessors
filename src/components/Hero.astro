@@ -1,0 +1,39 @@
+---
+const base = import.meta.env.BASE_URL;
+const stats = [
+  { label: 'Experiments', value: '13' },
+  { label: 'Units', value: '4' },
+  { label: 'Credits', value: '3-0-2-4' },
+];
+---
+
+<section class="bg-gradient-to-b from-brand-900 to-brand-700 text-white">
+  <div class="mx-auto max-w-(--container-lab) px-4 py-16 sm:px-6 sm:py-20">
+    <p class="text-sm font-semibold uppercase tracking-wide text-brand-300">21BMC302J</p>
+    <h1 class="mt-2 text-3xl font-bold sm:text-4xl lg:text-5xl">
+      Microcontrollers &amp; its Application in Medicine — Virtual Lab
+    </h1>
+    <p class="mt-4 max-w-2xl text-base text-brand-300 sm:text-lg">
+      Run every manual experiment — 8086, 8051, interfacing, and ARM — directly in your browser.
+      No installs, no login, free forever.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center gap-4">
+      <a
+        href={`${base}experiments`}
+        class="rounded-lab bg-accent px-6 py-3 font-semibold text-brand-900 shadow-(--shadow) transition hover:brightness-95"
+      >
+        Start Experiments
+      </a>
+      <dl class="flex flex-wrap gap-6 text-sm">
+        {
+          stats.map((s) => (
+            <div>
+              <dt class="text-brand-300">{s.label}</dt>
+              <dd class="text-lg font-semibold">{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</section>

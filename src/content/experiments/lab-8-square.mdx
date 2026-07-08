@@ -1,0 +1,120 @@
+---
+id: lab-8-square
+unit: 3
+order: 12
+title: 'Generation of Square Waveform Using 8051'
+device: '8051'
+engine: 'i8051emu'
+widget: 'dac-scope'
+hexFile: '/hex/lab8-square.hex'
+aim: 'To write an assembly language program to generate a square waveform using the 8051 microcontroller.'
+objectives:
+  - 'Alternate DAC2 between 00h and FFh at a regular interval using a delay subroutine.'
+  - 'Use LCALL/RET to structure a reusable software delay.'
+  - 'Observe a bipolar square wave (-5V to +5V) on the DAC oscilloscope widget.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import DacScopeWidget from '../../components/DacScopeWidget.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+With `00h` at DAC2 giving −5V and `FFh` giving +5V, writing `00` and `FF` alternately at DAC2, with a
+fixed delay between writes, produces a square wave whose period is set by the delay routine.
+
+| Port  | MICRO-51 | MICRO-POWER 1 | MICRO-31EB |
+| ----- | -------- | ------------- | ---------- |
+| DAC 1 | FFC0h    | A0C0h         | FFC0h      |
+| DAC 2 | FFC8h    | A0C8h         | FFC8h      |
+
+## Registers / Instructions Used
+
+| Mnemonic       | Meaning                                                                 |
+| -------------- | -------------------------------------------------------------------------- |
+| `LCALL DELAY`  | Long call to a delay subroutine (any 16-bit address).                       |
+| `MOV R1,#05`   | Outer delay counter.                                                       |
+| `DJNZ R2,HERE` | Decrement `R2`; loop to `HERE` while nonzero — the inner delay loop.       |
+| `DJNZ R1,LOOP` | Decrement `R1`; repeats the inner loop 5 times for a longer total delay.  |
+| `RET`          | Return from the delay subroutine to the caller.                           |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="Click the upload icon in the i8051emu toolbar and choose the downloaded program.hex below. Note: the emulator's own Run button steps at a fixed rate, so the ~1275-iteration delay loop below will look slow if you step it one-by-one — the scope still plots every DAC2 write exactly as it happens."
+>
+  <div class="mb-3">
+    <a
+      href={`${import.meta.env.BASE_URL}hex/lab8-square.hex`}
+      download
+      class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+    >
+      ⬇ Download program.hex
+    </a>
+  </div>
+  <DacScopeWidget addr={0xffc8} vmin={-5} vmax={5} windowMs={200} />
+</SimulatorFrame>
+
+## Sample Program
+
+### To obtain 0V at DAC 1 (reference)
+
+<CodeBlock
+  lang="asm"
+  code={`ORG 4100
+MOV A,#3F
+MOV DPTR,#FFC0
+MOVX @DPTR,A
+HERE: SJMP HERE`}
+/>
+
+### Square waveform at DAC 2
+
+<CodeBlock
+  lang="asm"
+  code={`ORG 4100
+MOV DPTR,#FFC8
+START: MOV A,#00
+MOVX @DPTR,A
+LCALL DELAY
+MOV A,#FF
+MOVX @DPTR,A
+LCALL DELAY
+LJMP START
+
+DELAY: MOV R1,#05
+LOOP:  MOV R2,#FF
+HERE:  DJNZ R2,HERE
+       DJNZ R1,LOOP
+       RET`}
+/>
+
+## Expected Output / Observation
+
+DAC2 alternates between −5V and +5V at a period set by the `DELAY` subroutine (5 × 255 inner
+iterations per half-cycle) — a bipolar square wave.
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'How would you change the square wave’s frequency?',
+      a: 'Change the outer (R1) or inner (R2) delay counts — smaller counts mean a shorter delay per half-cycle and a higher frequency, and vice versa.',
+    },
+    {
+      q: 'Why is a nested DJNZ loop used instead of a single loop?',
+      a: 'Each register can only count to 255 in one pass; nesting two 8-bit counters multiplies the achievable delay (here 5 × 255 ≈ 1275 iterations) without a wider counter register.',
+    },
+    {
+      q: 'What is the function of the EOC pulse in a real ADC (post-lab)?',
+      a: 'End-Of-Conversion signals that the ADC has finished sampling and its output register holds valid data, telling the CPU it is safe to read the result.',
+    },
+  ]}
+/>

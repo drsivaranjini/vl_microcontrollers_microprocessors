@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@plugin '@tailwindcss/typography';
+
+/* Map design tokens (tokens.css) into Tailwind v4's theme so utilities like
+   bg-brand-700, text-muted, font-mono, etc. exist. See docs/06_UI_UX_GUIDELINES.md. */
+@theme inline {
+  --color-brand-900: var(--brand-900);
+  --color-brand-700: var(--brand-700);
+  --color-brand-500: var(--brand-500);
+  --color-brand-300: var(--brand-300);
+  --color-accent: var(--accent);
+  --color-accent-warn: var(--accent-warn);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+
+  --color-scope-bg: var(--scope-bg);
+  --color-scope-grid: var(--scope-grid);
+  --color-scope-trace: var(--scope-trace);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-lab: var(--radius);
+  --container-lab: var(--maxw);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}

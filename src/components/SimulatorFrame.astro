@@ -1,0 +1,72 @@
+---
+interface Props {
+  title: string;
+  /** iframe src for a self-hosted emulator (8086emu / i8051emu). Omit for link-out engines (CPUlator). */
+  src?: string;
+  /** One-line "how to run" hint shown above the frame. */
+  hint?: string;
+  /** Show the "best in Chrome/Edge" banner (i8051emu is Chromium-target). */
+  chromiumNotice?: boolean;
+  /** Link-out CTA (used instead of an iframe) — e.g. CPUlator. */
+  linkOutUrl?: string;
+  linkOutLabel?: string;
+}
+
+const {
+  title,
+  src,
+  hint,
+  chromiumNotice = false,
+  linkOutUrl,
+  linkOutLabel = 'Open simulator ↗',
+} = Astro.props;
+---
+
+<div class="simulator-frame rounded-lab border border-border bg-surface shadow-(--shadow)">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">{title}</h2>
+    <slot name="toolbar" />
+  </div>
+
+  {hint && <p class="border-b border-border bg-brand-900/5 px-4 py-2 text-sm text-text-muted">{hint}</p>}
+
+  {
+    chromiumNotice && (
+      <p class="border-b border-border bg-accent-warn/10 px-4 py-2 text-sm text-text">
+        For the best experience, run this simulator on a desktop using Chrome or Edge.
+      </p>
+    )
+  }
+
+  <div class="flex flex-col gap-4 p-4">
+    {
+      src && (
+        <iframe
+          src={src}
+          title={title}
+          loading="lazy"
+          class="min-h-[420px] w-full rounded-lab border border-border sm:min-h-[520px]"
+        />
+      )
+    }
+    {
+      linkOutUrl && (
+        <div class="flex min-h-[160px] flex-col items-center justify-center gap-4 rounded-lab border border-dashed border-border p-8 text-center">
+          <p class="max-w-md text-sm text-text-muted">
+            This simulator runs on an external, author-hosted tool and opens in a new tab.
+          </p>
+          <a
+            href={linkOutUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 rounded-lab bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-900"
+          >
+            {linkOutLabel}
+          </a>
+        </div>
+      )
+    }
+    <!-- Widget mount point (DacScope / StepperMotor canvas or SVG), and any extra content -->
+    <slot />
+  </div>
+</div>

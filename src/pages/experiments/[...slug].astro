@@ -1,0 +1,20 @@
+---
+import { getCollection, render } from 'astro:content';
+import ExperimentLayout from '../../layouts/ExperimentLayout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('experiments');
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { title, unit, device, aim, objectives } = entry.data;
+---
+
+<ExperimentLayout title={title} unit={unit} device={device} aim={aim} objectives={objectives}>
+  <Content />
+</ExperimentLayout>

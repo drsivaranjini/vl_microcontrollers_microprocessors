@@ -1,0 +1,117 @@
+---
+id: lab-1a
+unit: 1
+order: 3
+title: '16-Bit Addition (With and Without Carry)'
+device: '8086'
+engine: '8086emu'
+widget: 'none'
+aim: 'To perform 16-bit addition using the 8086 microprocessor, with and without carry.'
+objectives:
+  - 'Understand 8086 registers (AX, BX, CX, SI, DI) and the flag register.'
+  - 'Use LODSW/string addressing via SI and DI to move 16-bit words between memory and registers.'
+  - 'Detect and store a carry out of a 16-bit addition using JNC.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8086/index.html`;
+
+## Theory
+
+The purpose of this experiment is to learn about the registers, instruction set, data-transfer operations, and
+control operations of the 8086. Two 16-bit numbers are stored in memory starting at `1500H`. The program loads
+each word into `AX` in turn (auto-incrementing the source pointer via `LODSW`), adds them, and stores the 16-bit
+sum at `1520H`. The **with-carry** variant also stores whatever carried out of the addition — `0000H` or `0001H`
+— at `1530H`.
+
+## Registers / Instructions Used
+
+| Mnemonic     | Meaning                                                          |
+| ------------ | ----------------------------------------------------------------- |
+| `MOV SI,1500H` | Set source index register to the base address of the operands. |
+| `XOR CX,CX`    | Clear `CX`, used here to hold the carry (0 or 1).               |
+| `LODSW`        | Load the word at `DS:SI` into `AX`; auto-increment `SI` by 2.   |
+| `MOV BX,AX`    | Move the first operand from `AX` into `BX`.                     |
+| `ADD BX,AX`    | Add `AX` to `BX`; result and carry flag land in `BX`/flags.      |
+| `JNC Forward`  | Jump to `Forward` if the addition did **not** produce a carry.   |
+| `INC CX`       | Increment `CX` (records a carry occurred).                       |
+| `MOV DI,1520H` | Set destination index to where the sum is stored.                |
+| `MOV [DI],AX`  | Store the accumulator's value at the destination address.        |
+| `HLT`          | Halt the processor — end of program.                              |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="8086 Emulator"
+  src={emuSrc}
+  hint="Paste the program below into the assembler pane, assemble, then Run/Step and inspect BX (sum), CX (carry), and memory at 1520H/1530H."
+/>
+
+## Sample Program
+
+### With carry
+
+<CodeBlock
+  lang="asm"
+  code={`MOV SI,1500H   ; Set source index as 1500H
+XOR CX,CX      ; Clear CX register (will hold carry)
+LODSW          ; Load data from source memory into AX & auto-increment SI
+MOV BX,AX      ; Move data from AX to BX
+LODSW          ; Load next word into AX & auto-increment SI
+ADD BX,AX      ; Add AX to BX; sum + carry flag in BX/flags
+JNC Forward    ; Jump if no carry
+INC CX         ; Increment CX (carry occurred)
+Forward:
+MOV DI,1520H   ; Set destination index as 1520H
+MOV [DI],BX    ; Move the result into 1520H
+MOV DI,1530H   ; Set destination index as 1530H
+MOV [DI],CX    ; Move the carry into 1530H
+HLT            ; End of program`}
+/>
+
+### Without carry (practice)
+
+<CodeBlock
+  lang="asm"
+  code={`MOV SI,1500H   ; Set source index as 1500H
+LODSW          ; Load data from source memory into AX & auto-increment SI
+MOV BX,AX      ; Move data from AX to BX
+LODSW          ; Load next word into AX & auto-increment SI
+ADD BX,AX      ; Add AX to BX; sum in BX
+MOV DI,1520H   ; Set destination index as 1520H
+MOV [DI],BX    ; Move the result into 1520H
+HLT            ; End of program`}
+/>
+
+## Expected Output / Observation
+
+| Operand 1 | Operand 2 | Sum (1520H) | Carry (1530H) |
+| --------- | --------- | ----------- | -------------- |
+| `0230H`   | `0305H`   | `0508H`     | `0000H`        |
+| `A2A2H`   | `A2A2H`   | `4544H`     | `0001H`        |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why is LODSW used instead of a plain MOV to fetch the operands?',
+      a: 'LODSW loads the word at DS:SI into AX and automatically increments SI by 2, so the second LODSW reads the next operand without recomputing the address.',
+    },
+    {
+      q: 'Which flag does ADD set that JNC checks?',
+      a: 'The carry flag (CF). JNC ("jump if not carry") branches to Forward only when CF = 0, i.e. the 16-bit addition did not overflow.',
+    },
+    {
+      q: 'Why clear CX with XOR CX,CX instead of MOV CX,0?',
+      a: 'Functionally equivalent here; XOR reg,reg is a common 8086 idiom to zero a register in fewer bytes and without needing an immediate operand.',
+    },
+    {
+      q: 'What would change if the operands were 8-bit instead of 16-bit?',
+      a: 'You would use LODSB/AL and ADD AL,... instead of LODSW/AX, and the carry-out would be a single bit rather than a possible 1 in the high word.',
+    },
+  ]}
+/>

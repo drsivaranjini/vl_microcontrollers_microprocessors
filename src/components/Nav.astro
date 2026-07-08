@@ -1,0 +1,71 @@
+---
+const base = import.meta.env.BASE_URL;
+const links = [
+  { href: `${base}`, label: 'Home' },
+  { href: `${base}curriculum`, label: 'Curriculum' },
+  { href: `${base}experiments`, label: 'Experiments' },
+  { href: `${base}about`, label: 'About' },
+  { href: `${base}faculty`, label: 'Faculty' },
+  { href: `${base}references`, label: 'References' },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-border bg-bg/90 backdrop-blur">
+  <div class="mx-auto flex max-w-(--container-lab) items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <a href={base} class="flex items-center gap-2 font-semibold text-brand-700">
+      <span class="text-lg leading-none">21BMC302J</span>
+      <span class="hidden text-sm font-normal text-text-muted sm:inline">Virtual Lab</span>
+    </a>
+
+    <nav aria-label="Primary" class="hidden md:block">
+      <ul class="flex items-center gap-6 text-sm font-medium">
+        {
+          links.map((l) => (
+            <li>
+              <a class="text-text hover:text-brand-700" href={l.href}>
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <button
+      id="nav-toggle"
+      type="button"
+      class="inline-flex items-center justify-center rounded-lab border border-border p-2 md:hidden"
+      aria-expanded="false"
+      aria-controls="mobile-nav"
+    >
+      <span class="sr-only">Toggle menu</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
+      </svg>
+    </button>
+  </div>
+
+  <nav id="mobile-nav" aria-label="Primary mobile" class="hidden border-t border-border md:hidden">
+    <ul class="flex flex-col gap-1 px-4 py-3 text-sm font-medium">
+      {
+        links.map((l) => (
+          <li>
+            <a class="block rounded-lab px-2 py-2 hover:bg-surface" href={l.href}>
+              {l.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const menu = document.getElementById('mobile-nav');
+  toggle?.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    menu?.classList.toggle('hidden');
+  });
+</script>

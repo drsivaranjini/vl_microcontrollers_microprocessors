@@ -1,0 +1,97 @@
+---
+id: lab-9a
+unit: 3
+order: 13
+title: 'Stepper Motor Interface with 8086 (Forward, Variable Speed)'
+device: '8086'
+engine: '8086emu'
+widget: 'stepper'
+aim: 'To write an assembly language program to interface a stepper motor with the 8086 microprocessor and run it forward at a variable speed.'
+objectives:
+  - 'Drive a 4-phase stepper motor by writing successive coil-energising patterns to an output port.'
+  - 'Control step rate with a software delay loop (DEC/JNZ).'
+  - 'Relate the pattern sequence 09-05-06-0A to clockwise rotation.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import StepperWidget from '../../components/StepperWidget.astro';
+import StepperSimControls from '../../components/StepperSimControls.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+## Theory
+
+A 4-phase unipolar stepper motor rotates one step for each new 4-bit coil-energising pattern written to
+its driver port. Cycling through the pattern table **09h → 05h → 06h → 0Ah** (repeating) rotates the
+rotor clockwise, one step per pattern change. The 8086 writes each pattern to **port C0h** via `OUT`,
+holds it for a software delay (`DEC DX` / `JNZ`), then advances to the next pattern — the delay count
+sets the step rate (speed).
+
+## Registers / Instructions Used
+
+| Mnemonic       | Meaning                                                            |
+| -------------- | --------------------------------------------------------------------- |
+| `MOV DI,1100H` | Point `DI` at the pattern table in memory.                             |
+| `MOV CL,04`    | Load a counter of 4 (one full cycle through the pattern table).       |
+| `MOV AL,[DI]`  | Fetch the next pattern byte.                                          |
+| `OUT C0,AL`    | Write the pattern to port C0h (the stepper driver).                    |
+| `DEC DX` / `JNZ DELAY` | Software delay loop — its length sets the time each step is held. |
+| `INC DI`       | Advance to the next entry in the pattern table.                        |
+| `LOOP LOOP1`   | Decrement `CL`; repeat while nonzero (one pass through all 4 patterns). |
+| `JMP 1000`     | Jump back to the start — run forever.                                  |
+
+## ▶ Simulator
+
+<SimulatorFrame
+  title="Stepper Motor"
+  hint="This visualiser is driven by simulated OUT-port writes (see the notice below), not by the vendored 8086 emulator — that engine doesn't implement OUT. Every other 8086 experiment in this lab still runs on the real emulator."
+>
+  <StepperSimControls table={[0x09, 0x05, 0x06, 0x0a]} label="Forward" defaultIntervalMs={300} />
+  <div class="mt-4">
+    <StepperWidget addr={0xc0} degPerStep={45} />
+  </div>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`; Address  Label   Instruction
+1000       START   MOV DI, 1100
+1004               MOV CL,04
+1007       LOOP1   MOV AL,[DI]
+1009               OUT C0,AL
+100B               MOV DX,1010
+100F       DELAY   DEC DX
+1010               JNZ DELAY
+1012               INC DI
+1013               LOOP LOOP1
+1015               JMP 1000
+1018               TABLE 09 05 06 0A`}
+/>
+
+## Expected Output / Observation
+
+The rotor advances one step clockwise each time a new pattern is written to C0h, cycling through
+09-05-06-0A repeatedly. Increasing the `MOV DX,1010` delay value slows the rotation; decreasing it
+speeds the rotation up. Use the **Speed** slider above to reproduce this — it controls the same
+observable behaviour (step rate) that the delay loop controls in the real program.
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does the pattern table have exactly 4 entries?',
+      a: 'A 4-phase stepper has 4 coils; a full electrical cycle through all 4 energising patterns corresponds to one mechanical step increment in this drive scheme.',
+    },
+    {
+      q: 'What determines the direction of rotation?',
+      a: 'The order the patterns are stepped through: 09→05→06→0A rotates one way (CW here); reversing the sequence (0A→06→05→09, Lab 9B) reverses the rotor direction.',
+    },
+    {
+      q: 'Why use a register-decrement delay (DEC DX/JNZ) instead of a fixed sleep?',
+      a: '8086 assembly has no OS-level sleep call available to a bare-metal program; a busy-wait counting loop is the standard way to burn a controllable, reproducible number of cycles.',
+    },
+  ]}
+/>

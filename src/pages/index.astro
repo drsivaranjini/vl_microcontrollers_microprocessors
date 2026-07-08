@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import ExperimentCard from '../components/ExperimentCard.astro';
+import { getCollection } from 'astro:content';
+
+const base = import.meta.env.BASE_URL;
+const entries = (await getCollection('experiments')).sort((a, b) => a.data.order - b.data.order);
+
+const unitTitles: Record<number, string> = {
+  1: 'Unit 1 — 8086 Microprocessor',
+  2: 'Unit 2 — 8051 Microcontroller',
+  3: 'Unit 3 — Interfacing',
+  4: 'Unit 4 — ARM',
+};
+
+const byUnit = new Map<number, typeof entries>();
+for (const e of entries) {
+  const list = byUnit.get(e.data.unit) ?? [];
+  list.push(e);
+  byUnit.set(e.data.unit, list);
+}
+---
+
+<BaseLayout title="Home">
+  <Hero />
+
+  <section class="mx-auto max-w-(--container-lab) px-4 py-14 sm:px-6">
+    <h2 class="text-2xl font-bold">Experiments</h2>
+    <p class="mt-1 text-text-muted">
+      Labs 0–12 from the course manual, organised by unit. Each page runs a live, embedded simulator — no
+      installs required.
+    </p>
+
+    {
+      [1, 2, 3, 4].map((unit) => {
+        const list = byUnit.get(unit) ?? [];
+        if (list.length === 0) return null;
+        return (
+          <div class="mt-10">
+            <h3 class="mb-4 text-lg font-semibold text-brand-700">{unitTitles[unit]}</h3>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {list.map((e) => (
+                <ExperimentCard
+                  unit={e.data.unit}
+                  title={e.data.title}
+                  summary={e.data.aim}
+                  device={e.data.device}
+                  href={`${base}experiments/${e.id}`}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })
+    }
+  </section>
+</BaseLayout>

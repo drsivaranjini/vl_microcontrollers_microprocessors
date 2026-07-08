@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const refs = [
+  { name: '8086-emulator-web (YJDoc2)', url: 'https://github.com/YJDoc2/8086-emulator-web', note: 'Apache-2.0 — self-hosted 8086 emulator, Units 1 and stepper (Unit 3).' },
+  { name: 'i8051emu (estarq)', url: 'https://github.com/estarq/i8051emu', note: 'MIT — self-hosted 8051 emulator, Unit 2 and DAC waveforms (Unit 3).' },
+  { name: 'CPUlator', url: 'https://cpulator.01xz.net/', note: 'Free-for-education ARMv7 simulator, Unit 4 (link-out).' },
+];
+---
+
+<BaseLayout title="References" description="Reference tools and manuals used by this virtual lab.">
+  <section class="mx-auto max-w-(--container-lab) px-4 py-12 sm:px-6">
+    <h1 class="text-3xl font-bold">References</h1>
+    <ul class="mt-6 space-y-4">
+      {
+        refs.map((r) => (
+          <li class="rounded-lab border border-border bg-surface p-4">
+            <a class="font-semibold text-brand-700 hover:underline" href={r.url} target="_blank" rel="noopener noreferrer">
+              {r.name}
+            </a>
+            <p class="mt-1 text-sm text-text-muted">{r.note}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

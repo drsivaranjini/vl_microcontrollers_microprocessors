@@ -1,0 +1,45 @@
+---
+interface Props {
+  addr?: number;
+  vmin?: number;
+  vmax?: number;
+  windowMs?: number;
+}
+
+const { addr = 0xffc8, vmin = 0, vmax = 5, windowMs = 40 } = Astro.props;
+---
+
+<div
+  class="dac-scope-widget rounded-lab border border-border bg-scope-bg p-4"
+  data-addr={addr}
+  data-vmin={vmin}
+  data-vmax={vmax}
+  data-window-ms={windowMs}
+>
+  <div class="mb-2 flex items-center justify-between gap-2">
+    <span class="font-mono text-xs text-white/70">DAC2 · {vmin}V to {vmax}V · {windowMs}ms window</span>
+    <button type="button" class="clear-btn rounded-lab border border-white/20 px-2 py-1 text-xs font-medium text-white/80 hover:text-white">
+      Clear
+    </button>
+  </div>
+  <canvas class="dac-canvas block w-full rounded-lab" style="height: 220px;"></canvas>
+</div>
+
+<script>
+  import { installEmuBus } from './emubus';
+  import { DacScope } from './DacScope';
+
+  document.querySelectorAll<HTMLDivElement>('.dac-scope-widget').forEach((root) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('.dac-canvas');
+    const clearBtn = root.querySelector<HTMLButtonElement>('.clear-btn');
+    if (!canvas) return;
+    installEmuBus();
+    const scope = new DacScope(canvas, {
+      addr: Number(root.dataset.addr ?? 0xffc8),
+      vmin: Number(root.dataset.vmin ?? 0),
+      vmax: Number(root.dataset.vmax ?? 5),
+      windowMs: Number(root.dataset.windowMs ?? 40),
+    });
+    clearBtn?.addEventListener('click', () => scope.clear());
+  });
+</script>

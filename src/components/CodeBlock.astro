@@ -1,0 +1,47 @@
+---
+interface Props {
+  code: string;
+  lang?: string;
+}
+
+const { code, lang = 'asm' } = Astro.props;
+const lines = code.replace(/\n$/, '').split('\n');
+---
+
+<div class="code-block relative rounded-lab border border-border bg-scope-bg text-sm">
+  <div class="flex items-center justify-between border-b border-border/40 px-4 py-2">
+    <span class="font-mono text-xs uppercase tracking-wide text-text-muted">{lang}</span>
+    <button
+      type="button"
+      class="copy-btn rounded-lab border border-border/40 px-2 py-1 text-xs font-medium text-white/80 hover:text-white"
+      data-code={code}
+    >
+      Copy
+    </button>
+  </div>
+  <div class="overflow-x-auto">
+    <pre class="m-0 flex min-w-full font-mono leading-6 text-white"><code class="flex-1 py-3 pr-4"
+      >{lines.map((line, i) => (
+        <span class="line-row flex">
+          <span class="line-num select-none w-10 shrink-0 pl-4 pr-3 text-right text-white/30">{i + 1}</span
+          ><span class="line-text whitespace-pre">{line}</span>
+        </span>
+      ))}</code></pre>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = btn.dataset.code ?? '';
+      try {
+        await navigator.clipboard.writeText(code);
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => (btn.textContent = original), 1500);
+      } catch {
+        btn.textContent = 'Copy failed';
+      }
+    });
+  });
+</script>

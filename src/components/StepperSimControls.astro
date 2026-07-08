@@ -1,0 +1,63 @@
+---
+interface Props {
+  table: number[];
+  label: string;
+  defaultIntervalMs?: number;
+}
+
+const { table, label, defaultIntervalMs = 300 } = Astro.props;
+const tableHex = table.map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+---
+
+<div
+  class="stepper-sim-controls"
+  data-table={JSON.stringify(table)}
+  data-label={label}
+  data-default-interval-ms={defaultIntervalMs}
+>
+  <p class="mb-3 rounded-lab border border-accent-warn/30 bg-accent-warn/10 px-3 py-2 text-xs text-text">
+    <strong>Simulated, not emulated:</strong> the vendored 8086 emulator doesn't implement the <code>OUT</code>
+    instruction (confirmed by inspecting its source — see <code>public/emu/8086/PATCHES.md</code>), so this
+    control drives the visualiser directly with the {label.toLowerCase()} pattern table
+    (<code>{tableHex}</code>) at an adjustable rate. The real listing above is transcribed verbatim from the
+    manual and is what a physical 8086 kit actually runs.
+  </p>
+  <div class="flex flex-wrap items-center gap-3">
+    <button
+      type="button"
+      class="play-btn rounded-lab bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-900"
+    >
+      ▶ Run {label}
+    </button>
+    <label class="flex items-center gap-2 text-sm text-text-muted">
+      Speed
+      <input type="range" class="speed-range" min="60" max="600" step="20" value={defaultIntervalMs} />
+    </label>
+  </div>
+</div>
+
+<script>
+  import { StepperProgramSim } from './stepperSim';
+
+  document.querySelectorAll<HTMLDivElement>('.stepper-sim-controls').forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>('.play-btn');
+    const range = root.querySelector<HTMLInputElement>('.speed-range');
+    if (!btn || !range) return;
+
+    const table: number[] = JSON.parse(root.dataset.table ?? '[]');
+    const label = root.dataset.label ?? 'Program';
+    const defaultIntervalMs = Number(root.dataset.defaultIntervalMs ?? 300);
+
+    const sim = new StepperProgramSim({ table, stepIntervalMs: defaultIntervalMs });
+    range.addEventListener('input', () => sim.setIntervalMs(Number(range.value)));
+    btn.addEventListener('click', () => {
+      if (sim.isRunning()) {
+        sim.stop();
+        btn.textContent = `▶ Run ${label}`;
+      } else {
+        sim.start();
+        btn.textContent = '⏸ Pause';
+      }
+    });
+  });
+</script>

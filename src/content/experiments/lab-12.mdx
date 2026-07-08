@@ -1,0 +1,124 @@
+---
+id: lab-12
+unit: 4
+order: 17
+title: 'ALP to Find the Largest and Smallest of Numbers (ARM)'
+device: 'ARM'
+engine: 'cpulator'
+widget: 'none'
+cpulatorUrl: 'https://cpulator.01xz.net/?sys=arm'
+aim: 'To write an assembly language program to find the largest and smallest of an array of numbers using the Keil µVision platform.'
+objectives:
+  - 'Scan a 7-word array in memory, tracking a running extremum in a register.'
+  - 'Use CMP + a conditional branch (BLS/BHI) to select which comparison result to keep.'
+  - 'Store the final result back to a fixed memory location.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+## Theory
+
+The array (7 words, starting at `0x40000000`) is scanned once: `R3` holds the running extremum,
+starting as the first element. Each subsequent element is loaded into `R4` and compared against `R3`;
+the branch condition (`BLS` — branch if lower-or-same — in the listing below) decides whether `R3` is
+replaced. Using **`BLS`** keeps the *smaller* of the two in `R3` at the end (branch away, i.e. keep the
+current R3, when R3 is already the larger one is *not* what BLS does — see the viva question below for
+exactly how the comparison direction determines smallest vs. largest); swapping it for **`BHI`** (branch
+if higher) makes the same routine find the *largest* element instead.
+
+## Registers / Instructions Used
+
+| Mnemonic        | Meaning                                                                   |
+| --------------- | ---------------------------------------------------------------------------- |
+| `MOV R5,#06`     | Loop counter — 6 more comparisons after the first element is loaded (7 total). |
+| `MOV R1,#0x40000000` | Base address of the array in memory.                                     |
+| `MOV R2,#0x4000001C` | Address where the result will be stored.                                  |
+| `LDR R3,[R1]`    | Load the first array element as the initial running extremum.               |
+| `ADD R1,R1,#04`  | Advance the memory pointer to the next word (4 bytes).                       |
+| `LDR R4,[R1]`    | Load the next element for comparison.                                        |
+| `CMP R3,R4`      | Compare the running extremum against the new element.                        |
+| `BLS LOOP1`      | Branch if R3 is lower-or-same — controls which value survives (see viva).    |
+| `SUBS R5,R5,#01` | Decrement the loop counter.                                                  |
+| `STR R3,[R2]`    | Store the final extremum to the result address.                              |
+
+## ▶ Simulator
+
+<SimulatorFrame
+  title="CPUlator (ARMv7)"
+  linkOutUrl="https://cpulator.01xz.net/?sys=arm"
+  linkOutLabel="Open in CPUlator (ARMv7) ↗"
+  hint="Paste Part I into CPUlator, initialise 7 words of data memory at 0x40000000, assemble, run, then inspect memory at 0x4000001C for the result."
+/>
+
+## Sample Program
+
+### Part I — ARM assembly
+
+<CodeBlock
+  lang="armasm"
+  code={`; ALP TO FIND THE LARGEST/SMALLEST NUMBER IN AN ARRAY OF 7 NUMBERS
+AREA LAR_SMAL, CODE, READONLY
+EXPORT start
+start
+  MOV R5, #06                ; COUNTER VALUE E.G 7 NUMBERS
+  MOV R1, #0x40000000        ; START OF THE DATA MEMORY
+  MOV R2, #0x4000001C        ; RESULT LOCATION
+  LDR R3, [R1]                ; GET THE FIRST DATA
+LOOP
+  ADD R1, R1, #04            ; MEMORY POINTER UPDATED TO FETCH NEXT DATA
+  LDR R4, [R1]                ; GET NEXT NUMBER
+  CMP R3, R4                  ; COMPARE BOTH NUMBERS
+  BLS LOOP1                   ; (use BHI instead of BLS to find the largest)
+  MOV R3, R4
+LOOP1
+  SUBS R5, R5, #01            ; DECREMENT THE COUNTER
+  CMP R5, #00
+  BNE LOOP
+  STR R3, [R2]
+STOP
+  B STOP
+  END`}
+/>
+
+### Part II — C wrapper (calls the assembly routine)
+
+<CodeBlock
+  lang="c"
+  code={`extern void start();
+void main()
+{
+    start();
+    while (1); // Stop
+}`}
+/>
+
+## Expected Output / Observation
+
+After running, memory address `0x4000001C` holds the smallest of the 7 values seeded into
+`0x40000000..0x40000018`. Replacing `BLS` with `BHI` in the listing and re-running instead leaves the
+**largest** value at the same result address.
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does using BLS (branch if lower-or-same) end up finding the smallest value?',
+      a: 'When R3 ≤ R4, BLS branches past "MOV R3,R4" and keeps R3 unchanged — i.e. the loop only overwrites R3 when the new element R4 is smaller (R3 > R4, so BLS does NOT branch and the MOV executes). Over the whole array, R3 ends up holding the smallest element seen.',
+    },
+    {
+      q: 'What single change finds the largest element instead of the smallest?',
+      a: 'Replace BLS with BHI (branch if higher): now R3 is only overwritten when R4 is larger than the current R3, so R3 converges on the maximum instead of the minimum.',
+    },
+    {
+      q: 'Why does the loop counter start at 6, not 7, for a 7-element array?',
+      a: 'The first element is already loaded into R3 before the loop begins, so only the remaining 6 elements need to be fetched and compared inside the loop.',
+    },
+    {
+      q: 'What is the purpose of the Part II C wrapper?',
+      a: 'It demonstrates calling a hand-written assembly routine (start) from C — extern declares the symbol, and main simply invokes it then halts, showing how the two source files link together in Keil.',
+    },
+  ]}
+/>

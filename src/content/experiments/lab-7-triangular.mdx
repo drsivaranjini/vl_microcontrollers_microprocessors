@@ -1,0 +1,119 @@
+---
+id: lab-7-triangular
+unit: 3
+order: 11
+title: 'Generation of Triangular Waveform Using 8051'
+device: '8051'
+engine: 'i8051emu'
+widget: 'dac-scope'
+hexFile: '/hex/lab7-triangular.hex'
+aim: 'To write an assembly language program to generate a triangular waveform using the 8051 microcontroller.'
+objectives:
+  - 'Generate a ramp-up (00h→FFh) followed by a ramp-down (FFh→00h) at DAC2.'
+  - 'Use JNZ to detect the 8-bit wrap and switch ramp direction.'
+  - 'Observe a symmetric triangular wave on the DAC oscilloscope widget.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import DacScopeWidget from '../../components/DacScopeWidget.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+With `00h` at DAC2 giving 0V and `FFh` giving +5V, outputting data that slowly increases from `00` to
+`FF` and then decreases back from `FF` to `00`, at regular intervals, produces a triangular wave: a
+linear rise immediately followed by a linear fall.
+
+| Port  | MICRO-51 | MICRO-POWER 1 | MICRO-31EB |
+| ----- | -------- | ------------- | ---------- |
+| DAC 1 | FFC0h    | A0C0h         | FFC0h      |
+| DAC 2 | FFC8h    | A0C8h         | FFC8h      |
+
+## Registers / Instructions Used
+
+| Mnemonic        | Meaning                                                          |
+| --------------- | ------------------------------------------------------------------ |
+| `MOV DPTR,#FFC8` | Point the data pointer at DAC2.                                    |
+| `MOVX @DPTR,A`   | Write the accumulator to DAC2.                                     |
+| `INC A` / `DEC A` | Step the ramp up (INC) or down (DEC).                             |
+| `JNZ LOOP1`      | Loop while `A ≠ 0` — keeps ramping up until it wraps `FFh → 00h`.  |
+| `LJMP START`     | Long jump back to the very start once a full up/down cycle completes. |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="Click the upload icon in the i8051emu toolbar and choose the downloaded program.hex below, then Run/Next. The scope plots every DAC2 (FFC8h) write live."
+>
+  <div class="mb-3">
+    <a
+      href={`${import.meta.env.BASE_URL}hex/lab7-triangular.hex`}
+      download
+      class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+    >
+      ⬇ Download program.hex
+    </a>
+  </div>
+  <DacScopeWidget addr={0xffc8} vmin={0} vmax={5} windowMs={80} />
+</SimulatorFrame>
+
+## Sample Program
+
+### To obtain 0V at DAC 1 (reference)
+
+<CodeBlock
+  lang="asm"
+  code={`ORG 4100
+MOV A,#3F
+MOV DPTR,#FFC0
+MOVX @DPTR,A
+HERE: SJMP HERE`}
+/>
+
+### Triangular waveform at DAC 2
+
+<CodeBlock
+  lang="asm"
+  code={`ORG 4100
+MOV DPTR,#FFC8
+START:
+MOV A,#00
+LOOP1: MOVX @DPTR,A   ; ramp up
+INC A
+JNZ LOOP1             ; loop until A wraps to 0
+MOV A,#FF
+LOOP2: MOVX @DPTR,A   ; ramp down
+DEC A
+JNZ LOOP2             ; loop until A reaches 0
+LJMP START`}
+/>
+
+## Expected Output / Observation
+
+DAC2's output rises linearly from 0V to +5V then falls linearly back to 0V, repeating continuously — a
+symmetric triangular wave, with a brief single-sample plateau at each peak/trough (the last write of one
+ramp and the first write of the next are both the extreme value, `FF` or the initial `00`).
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why is JNZ (not a fixed count) used to detect the end of each ramp?',
+      a: 'INC A / DEC A already sets the zero flag; JNZ testing against 0 exploits the natural 8-bit wraparound of the accumulator instead of maintaining a separate loop counter.',
+    },
+    {
+      q: 'Why use LJMP instead of SJMP to return to START?',
+      a: 'SJMP’s target must be within roughly ±127 bytes of the next instruction; LJMP can reach any 16-bit address, which this program needs since START is defined before the ramp-down code.',
+    },
+    {
+      q: 'How would you make the triangle wave asymmetric (faster rise, slower fall)?',
+      a: 'Insert a short delay subroutine only in the ramp-down loop (LOOP2), similar to the square-wave experiment’s DELAY routine, without adding one to LOOP1.',
+    },
+  ]}
+/>

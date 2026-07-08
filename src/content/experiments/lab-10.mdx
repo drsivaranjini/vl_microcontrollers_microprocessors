@@ -1,0 +1,142 @@
+---
+id: lab-10
+unit: 4
+order: 15
+title: 'ALP to Perform Arithmetic Operations (ARM)'
+device: 'ARM'
+engine: 'cpulator'
+widget: 'none'
+cpulatorUrl: 'https://cpulator.01xz.net/?sys=arm'
+aim: 'To write ARM assembly language programs to perform addition, subtraction, multiplication, and division.'
+objectives:
+  - 'Use LDR/MOV to load immediate and 32-bit literal values into registers.'
+  - 'Perform ADD, SUB, MUL and a software division loop on ARMv7 registers.'
+  - 'Read results directly out of registers R3 (and R0 for the division remainder) in the debugger.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+## Theory
+
+Keil µVision (and CPUlator, its free in-browser equivalent for this lab) assembles and runs standalone
+ARM assembly. Each program below is a self-contained `AREA ... CODE, READONLY` block with an `ENTRY`
+point and an infinite `B HERE` loop at the end (the standard way to halt a bare-metal ARM program so the
+debugger can inspect final register state).
+
+## Registers / Instructions Used
+
+| Mnemonic       | Meaning                                                                |
+| -------------- | --------------------------------------------------------------------- |
+| `LDR R1,=0x...` | Load a full 32-bit literal into a register (via a literal pool).      |
+| `MOV R1,#0x..`  | Move an 8-bit (rotated) immediate directly into a register.            |
+| `ADD/SUB/MUL`   | Register-register arithmetic: `Rd, Rn, Rm`.                            |
+| `CMP` / `BLT`   | Compare two registers; branch if the result was "less than".          |
+| `B LOOP` / `B HERE` | Unconditional branch — used both for the division loop and to halt. |
+
+## ▶ Simulator
+
+<SimulatorFrame
+  title="CPUlator (ARMv7)"
+  linkOutUrl="https://cpulator.01xz.net/?sys=arm"
+  linkOutLabel="Open in CPUlator (ARMv7) ↗"
+  hint="CPUlator isn't self-hostable and iframe-embedding permission from the author is unconfirmed, so this links out rather than embeds — see the decision log. Paste one of the four programs below in, assemble, then step through and watch R3 (and R0 for division)."
+/>
+
+## Sample Programs
+
+### i. Addition
+
+<CodeBlock
+  lang="armasm"
+  code={`AREA ARMex, CODE, READONLY   ; Name this block of code ARMex
+ENTRY                        ; Mark first instruction to execute
+main
+  LDR R1, =0x00001133
+  LDR R2, =0x00001111
+  ADD R3, R1, R2
+HERE
+  B HERE                     ; End loop
+  END                        ; End of file`}
+/>
+
+### ii. Subtraction
+
+<CodeBlock
+  lang="armasm"
+  code={`AREA ARMex, CODE, READONLY
+ENTRY
+main
+  MOV R1, #0x44
+  MOV R2, #0x11
+  SUB R3, R1, R2
+HERE
+  B HERE
+  END`}
+/>
+
+### iii. Multiplication
+
+<CodeBlock
+  lang="armasm"
+  code={`AREA ARMex, CODE, READONLY
+ENTRY
+main
+  MOV R1, #0x5
+  MOV R2, #0x2
+  MUL R3, R1, R2
+HERE
+  B HERE
+  END`}
+/>
+
+### iv. Division (quotient in R3, remainder in R0)
+
+<CodeBlock
+  lang="armasm"
+  code={`AREA ARMex, CODE, READONLY
+ENTRY
+main
+  MOV R0, #100          ; Dividend
+  MOV R1, #10           ; Divisor
+  MOV R3, #0            ; Quotient
+LOOP
+  CMP R0, R1
+  BLT DONE
+  ADD R3, R3, #1
+  SUB R0, R0, R1
+  B LOOP
+DONE
+HERE
+  B HERE
+  END`}
+/>
+
+## Expected Output / Observation
+
+| Program        | Result register(s)                        |
+| -------------- | ------------------------------------------- |
+| Addition       | R3 = 0x00002244 (0x1133 + 0x1111)           |
+| Subtraction    | R3 = 0x33 (0x44 − 0x11)                     |
+| Multiplication | R3 = 0xA (5 × 2)                            |
+| Division       | R3 = 10 (quotient), R0 = 0 (remainder, 100 ÷ 10) |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does the addition program use LDR R1,=0x00001133 instead of MOV R1,#0x1133?',
+      a: 'ARM MOV immediates are limited to an 8-bit value rotated by an even number of bits; 0x1133 cannot be encoded that way, so the assembler must load it from a literal pool via LDR =constant.',
+    },
+    {
+      q: 'Why is there no DIV instruction used in the division program?',
+      a: 'Base ARMv7-A/Thumb-1 has no integer divide instruction (only some later architecture variants add one) — a repeated-subtraction loop with CMP/BLT is the portable way to divide.',
+    },
+    {
+      q: 'What does the infinite B HERE loop at the end of each program accomplish?',
+      a: 'It parks the PC at a known instruction so the debugger can stop and inspect register state, rather than the CPU running off the end of the code area into undefined memory.',
+    },
+  ]}
+/>

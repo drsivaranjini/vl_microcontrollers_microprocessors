@@ -1,0 +1,39 @@
+/* Design tokens — see docs/06_UI_UX_GUIDELINES.md */
+:root {
+  /* Brand — SRM institutional blue */
+  --brand-900: #002a5c;
+  --brand-700: #003b7a;
+  --brand-500: #1e5fa8;
+  --brand-300: #7fa8d4;
+  --accent: #37e6a0; /* interactive/energised highlights, scope trace */
+  --accent-warn: #f0a726;
+
+  /* Neutrals */
+  --bg: #ffffff;
+  --surface: #f5f7fb;
+  --border: #e2e8f0;
+  --text: #0f1b2d;
+  --text-muted: #51607a;
+
+  /* Scope/widget */
+  --scope-bg: #0b1220;
+  --scope-grid: #1f2a44;
+  --scope-trace: var(--accent);
+
+  /* Type & rhythm */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(16, 27, 45, 0.06), 0 8px 24px rgba(16, 27, 45, 0.08);
+  --maxw: 1200px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #111a2e;
+    --border: #22304d;
+    --text: #eaf0fb;
+    --text-muted: #9fb0cc;
+  }
+}

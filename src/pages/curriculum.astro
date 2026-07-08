@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const units = [
+  { unit: 1, title: '8086 Processor', topics: 'Registers, data transfer, logical ops, addition, block transfer, sum of n, sorting.' },
+  { unit: 2, title: '8051 Microcontroller', topics: '8-bit addition/subtraction, 1s/2s complement, Fibonacci series.' },
+  { unit: 3, title: 'Interfacing', topics: 'DAC waveforms (sawtooth/triangular/square) and stepper motor control.' },
+  { unit: 4, title: 'ARM Microcontroller', topics: 'ALP: sums, factorial, parity, largest/smallest of two numbers.' },
+];
+---
+
+<BaseLayout title="Curriculum" description="Curriculum overview for 21BMC302J.">
+  <section class="mx-auto max-w-(--container-lab) px-4 py-12 sm:px-6">
+    <h1 class="text-3xl font-bold">Curriculum</h1>
+    <p class="mt-2 text-text-muted">21BMC302J · Microcontrollers and its Application in Medicine · L-T-P-C 3-0-2-4</p>
+
+    <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+      {
+        units.map((u) => (
+          <div class="rounded-lab border border-border bg-surface p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">Unit {u.unit}</p>
+            <h2 class="mt-1 text-lg font-semibold">{u.title}</h2>
+            <p class="mt-1 text-sm text-text-muted">{u.topics}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

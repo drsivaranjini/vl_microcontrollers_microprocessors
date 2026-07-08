@@ -1,0 +1,94 @@
+---
+id: lab-11
+unit: 4
+order: 16
+title: 'ALP to Find Factorial of a Number (ARM)'
+device: 'ARM'
+engine: 'cpulator'
+widget: 'none'
+cpulatorUrl: 'https://cpulator.01xz.net/?sys=arm'
+aim: 'To write an assembly language program to find the factorial of a number using the Keil µVision platform.'
+objectives:
+  - 'Compute n! iteratively using a countdown-and-multiply loop.'
+  - 'Use SUBS/CMP/BEQ/BNE to combine a decrement, a stop condition, and loop control.'
+  - 'Track the running product across registers (R0, R1, R3).'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+## Theory
+
+Factorial (`n! = n × (n−1) × ... × 1`) is computed iteratively: keep a running product in `R0`, a
+countdown copy in `R1`, and on each pass multiply the running product by the (already-decremented)
+countdown value, stopping once the countdown reaches 1.
+
+## Registers / Instructions Used
+
+| Mnemonic     | Meaning                                                                 |
+| ------------ | ------------------------------------------------------------------------ |
+| `MOV r0,#7`  | Seed the number whose factorial is being computed (7, here).             |
+| `MOV r1,r0`  | Copy it into the countdown register.                                    |
+| `SUBS r1,r1,#1` | Decrement the countdown, updating flags.                              |
+| `CMP r1,#1`  | Check whether the countdown has reached 1 (loop's stop condition).       |
+| `BEQ STOP`   | Branch to `STOP` once the countdown reaches 1.                          |
+| `MUL r3,r0,r1` | Multiply the running product by the new countdown value.               |
+| `MOV r0,r3`  | Store the product back into `r0` for the next iteration.                |
+| `BNE FACT`   | Otherwise, branch back to repeat.                                        |
+
+## ▶ Simulator
+
+<SimulatorFrame
+  title="CPUlator (ARMv7)"
+  linkOutUrl="https://cpulator.01xz.net/?sys=arm"
+  linkOutLabel="Open in CPUlator (ARMv7) ↗"
+  hint="Paste the program below into CPUlator, assemble, then run/step and inspect R0 for the final factorial value."
+/>
+
+## Sample Program
+
+<CodeBlock
+  lang="armasm"
+  code={`AREA FACTORIAL, CODE, READONLY
+EXPORT start
+start
+  MOV r0, #7        ; STORE FACTORIAL NUMBER IN R0
+  MOV r1, r0        ; MOVE THE SAME NUMBER IN R1
+FACT
+  SUBS r1, r1, #1   ; SUBTRACTION
+  CMP r1, #1        ; COMPARISON
+  BEQ STOP
+  MUL r3, r0, r1    ; MULTIPLICATION
+  MOV r0, r3        ; Result
+  BNE FACT          ; BRANCH TO THE LOOP IF NOT EQUAL
+STOP
+  NOP
+  NOP
+  NOP
+  END               ; Mark end of file`}
+/>
+
+## Expected Output / Observation
+
+With `r0` seeded to 7, the loop computes `7 × 6 × 5 × 4 × 3 × 2 = 5040`, left in `R0` when the program
+reaches `STOP`.
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does the loop stop at CMP r1,#1 rather than r1,#0?',
+      a: 'Multiplying down to 1 is sufficient — factorial never needs a multiply-by-zero step, so stopping when the countdown reaches 1 (rather than continuing to 0) avoids an unnecessary final multiplication by zero.',
+    },
+    {
+      q: 'What would happen if the initial value in R0 were 0 or 1?',
+      a: 'SUBS r1,r1,#1 would immediately make r1 either -1 or 0, so CMP r1,#1 would never be true via BEQ on the first pass in the 0 case, and BNE FACT could loop incorrectly — the program as written assumes n ≥ 2, matching a lab exercise rather than a general-purpose robust routine.',
+    },
+    {
+      q: 'Why are three NOPs placed at STOP instead of the usual B HERE infinite loop?',
+      a: 'Unlike B HERE, NOPs don’t actually prevent the PC from running past STOP into whatever follows in memory — this relies on the student single-stepping in the debugger and reading R0 right after the NOPs, rather than free-running the program. B HERE (as in Lab 10) is the safer idiom if you intend to press “Run” rather than “Step”.',
+    },
+  ]}
+/>

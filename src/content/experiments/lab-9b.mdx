@@ -1,0 +1,125 @@
+---
+id: lab-9b
+unit: 3
+order: 14
+title: 'Stepper Motor Interface with 8086 (Forward and Reverse)'
+device: '8086'
+engine: '8086emu'
+widget: 'stepper'
+aim: 'To write an assembly language program to run a stepper motor forward then in reverse, with delay, using the 8086 microprocessor.'
+objectives:
+  - 'Reuse a common step-and-delay subroutine for both rotation directions.'
+  - 'Reverse rotation by reversing the pattern-table traversal order (09-05-06-0A → 0A-06-05-09).'
+  - 'Use CALL/RET to structure the stepping and pause subroutines.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import StepperWidget from '../../components/StepperWidget.astro';
+import StepperSimControls from '../../components/StepperSimControls.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+## Theory
+
+The same step-and-delay subroutine (`1025h`) drives the motor for both directions — only the pattern
+table it reads from differs. `DI` is pointed at the **forward table** (`09 05 06 0A`, at `103Fh`) for 20
+steps, paused (`1037h`), then pointed at the **reverse table** (`0A 06 05 09`, at `1043h`, the same
+bytes in reverse order) for another 20 steps. Feeding the pattern table backwards is what reverses the
+rotor's physical direction — the stepping subroutine itself doesn't know or care which way it's
+spinning.
+
+## Registers / Instructions Used
+
+| Mnemonic        | Meaning                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `MOV BL,20`      | Outer counter — number of steps to take in the current direction.            |
+| `CALL 1025`      | Call the shared step-and-delay subroutine.                                   |
+| `DEC BL` / `JNZ` | Loop the outer counter until 20 steps have been taken.                       |
+| `CALL 103B`      | Call a longer pause subroutine between direction changes.                    |
+| `MOV AL,[DI]` / `OUT C0,AL` | Inside the subroutine: fetch and write the next pattern (as in Lab 9A). |
+| `RET`            | Return from a subroutine to its caller.                                      |
+
+## ▶ Simulator
+
+<SimulatorFrame
+  title="Stepper Motor"
+  hint="Driven by simulated OUT-port writes (see the notice below) — the vendored 8086 emulator doesn't implement OUT. Run Forward, then Reverse, to see the rotor change direction exactly as the manual's pattern tables dictate."
+>
+  <div class="flex flex-wrap gap-3">
+    <StepperSimControls table={[0x09, 0x05, 0x06, 0x0a]} label="Forward" defaultIntervalMs={300} />
+  </div>
+  <div class="mt-3 flex flex-wrap gap-3">
+    <StepperSimControls table={[0x0a, 0x06, 0x05, 0x09]} label="Reverse" defaultIntervalMs={300} />
+  </div>
+  <div class="mt-4">
+    <StepperWidget addr={0xc0} degPerStep={45} />
+  </div>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`; Address  Instruction
+1000       MOV BL,20
+1003       MOV DI,103F        ; forward table
+1007       CALL 1025
+100A       DEC BL
+100C       JNZ 1003
+100E       CALL 103B          ; long pause
+1011       MOV BL,20
+1014       MOV DI,1043        ; reverse table
+1018       CALL 1025
+101B       DEC BL
+101D       JNZ 1014
+101F       CALL 103B
+1022       JMP 1000
+
+1025       MOV CL,04
+1028       MOV AL,[DI]
+102A       OUT C0,AL
+102C       MOV DX,1010
+1030       DEC DX
+1031       JNZ 1030
+1033       INC DI
+1034       LOOP 1028
+1036       RET
+
+1037       MOV DX,0FFFF       ; long inter-direction pause
+103B       DEC DX
+103C       JNZ 103B
+103E       RET
+
+103F       FORWARD DATA  09 05 06 0A
+1043       REVERSE DATA  0A 06 05 09`}
+/>
+
+## Expected Output / Observation
+
+The rotor takes 20 steps clockwise (forward table), pauses noticeably longer than between individual
+steps, then takes 20 steps counter-clockwise (reverse table), and repeats. Both `StepperSimControls`
+blocks above drive the same visualiser — start Forward, stop it, then start Reverse to see the
+direction readout flip from CW to CCW.
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why is one subroutine (1025h) shared between both directions?',
+      a: 'The stepping logic (fetch pattern, OUT, delay, advance pointer) is identical either way — only the table DI points at differs, so factoring it into a subroutine avoids duplicating that logic.',
+    },
+    {
+      q: 'Why is the reverse table simply the forward table reversed, not a different set of values?',
+      a: 'The same 4 coil-energising patterns produce rotation; only the order they are applied in determines whether the field advances clockwise or counter-clockwise around the coils.',
+    },
+    {
+      q: 'What is CALL 103Bh (the long pause) for?',
+      a: 'It inserts a deliberate stop between reversing directions, giving the motor time to settle rather than instantly reversing torque, which is gentler on a real motor.',
+    },
+    {
+      q: 'How many bytes of the stack does a CALL instruction use, and why?',
+      a: 'CALL pushes the 16-bit return address (2 bytes) onto the stack so RET knows where to resume; on the 8086 that is one push of a word-sized value.',
+    },
+  ]}
+/>
