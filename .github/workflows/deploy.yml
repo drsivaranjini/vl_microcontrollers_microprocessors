@@ -7,19 +7,16 @@ concurrency: { group: pages, cancel-in-progress: true }
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: virtual-lab
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm, cache-dependency-path: virtual-lab/package-lock.json }
+        with: { node-version: 22, cache: npm }
       - run: npm ci
       # .hex files under public/hex are committed (built via scripts/hex-from-bytes.mjs, see
       # docs/02_BUILD_GUIDE.md §8), so no assembler toolchain is needed in CI.
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        with: { path: virtual-lab/dist }
+        with: { path: dist }
   deploy:
     needs: build
     runs-on: ubuntu-latest
