@@ -1,4 +1,4 @@
-Sitemap: https://yjdoc2.github.io/8086-emulator-web/sitemap.xml
+Sitemap: https://yjdoc2.github.io./sitemap.xml
 User-agent: *
 Allow: /
 Allow: /compile
