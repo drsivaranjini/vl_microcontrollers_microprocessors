@@ -1,26 +1,160 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+/* DLMS-matched design tokens — see docs/12_REDESIGN_BRIEF.md §1 */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-900: #002a5c;
+  --brand-700: #003b7a;
+  --brand-600: #0b4d94;
+  --brand-500: #1e5fa8;
+  --brand-100: #e7eef7;
+  --accent: #0aa1dc;
+
+  --bg: #ffffff;
+  --surface: #f5f8fc;
+  --surface-2: #eef3fa;
+  --border: #dbe4f0;
+
+  --text: #0f1b2d;
+  --text-muted: #4a5b74;
+  /* Guaranteed-legible text/icon color for dark sections (hero, footer) — QA round 2 C5 */
+  --text-on-dark: #ffffff;
+  --text-muted-on-dark: #c3d4ea;
+
+  --ok: #1a9e6c;
+  --warn: #e08a1e;
+  /* Darker variants for small colored TEXT on a light/tinted background (badges, inline status) —
+     --ok/--warn on white are only ~3.4:1 / ~2.7:1, well under WCAG AA's 4.5:1 for normal text.
+     These verified via the WCAG relative-luminance formula: ok-text ≈5.4:1, warn-text ≈4.9:1. */
+  --ok-text: #0e7a52;
+  --warn-text: #a85f00;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'Fira Code', monospace;
+
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(3, 27, 60, 0.06), 0 10px 30px rgba(3, 27, 60, 0.08);
+  --maxw: 1200px;
 }
 
+/* Map tokens into Tailwind v4's theme so utilities like bg-brand-700, text-muted, etc. exist. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand-900: var(--brand-900);
+  --color-brand-700: var(--brand-700);
+  --color-brand-600: var(--brand-600);
+  --color-brand-500: var(--brand-500);
+  --color-brand-100: var(--brand-100);
+  --color-accent: var(--accent);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-on-dark: var(--text-on-dark);
+  --color-text-muted-on-dark: var(--text-muted-on-dark);
+
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-ok-text: var(--ok-text);
+  --color-warn-text: var(--warn-text);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-lab: var(--radius);
+  --container-lab: var(--maxw);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Content styling for experiment pages. Deliberately hand-written (not a generic typography
+   preset) so every color is one of our own tokens — the previous Astro build shipped with
+   Tailwind Typography's prose-slate preset, which silently picked near-black text for inline
+   code/tables and went dark-on-dark in places (QA round 1 M2 / round 2 C5). */
+.experiment-prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 1.5rem;
+}
+.experiment-prose h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 1.25rem;
+}
+.experiment-prose p {
+  color: var(--text);
+  line-height: 1.7;
+}
+.experiment-prose ul,
+.experiment-prose ol {
+  color: var(--text);
+  padding-left: 1.25rem;
+}
+.experiment-prose ul {
+  list-style: disc;
+}
+.experiment-prose ol {
+  list-style: decimal;
+}
+.experiment-prose strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.experiment-prose code {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.1rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+.experiment-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.experiment-prose th,
+.experiment-prose td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--text);
+}
+.experiment-prose th {
+  background: var(--surface);
+  font-weight: 600;
+}
+.experiment-prose blockquote {
+  border-left: 3px solid var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  padding: 0.75rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text);
+  font-size: 0.9rem;
 }

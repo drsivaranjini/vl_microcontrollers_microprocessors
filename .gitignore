@@ -1,5 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Python bytecode cache (generated if public/emu/8051's *.py are ever run directly with python3)
+__pycache__/
+*.pyc
+
 # dependencies
 /node_modules
 /.pnp
