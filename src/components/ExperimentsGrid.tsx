@@ -15,12 +15,13 @@ export default function ExperimentsGrid() {
         <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Virtual Experiments</p>
         <h2 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">Run an experiment</h2>
         <p className="mt-2 max-w-2xl text-text-muted">
-          Units 1 &amp; 2 are live for this pilot release — read the theory, run the program, and observe the
-          result in your browser. Units 3 &amp; 4 are being finished based on pilot feedback.
+          Read the theory, run the program, and observe the result directly in your browser.
         </p>
 
         {([1, 2, 3, 4] as const).map((unit) => {
-          const list = experimentsByUnit(unit);
+          // Pilot shows only released units (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A5) — no
+          // greyed/"coming soon" cards, Units 3-4 simply don't appear until released.
+          const list = experimentsByUnit(unit).filter((e) => e.status === 'live');
           if (list.length === 0) return null;
           return (
             <div key={unit} className="mt-10">

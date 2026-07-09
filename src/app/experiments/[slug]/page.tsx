@@ -29,7 +29,13 @@ export default async function ExperimentPage({ params }: { params: Promise<{ slu
   }
 
   return (
-    <ExperimentLayout title={experiment.title} unit={experiment.unit} device={experiment.device} aim={experiment.aim}>
+    <ExperimentLayout
+      id={experiment.id}
+      title={experiment.title}
+      unit={experiment.unit}
+      device={experiment.device}
+      aim={experiment.aim}
+    >
       <Content />
     </ExperimentLayout>
   );

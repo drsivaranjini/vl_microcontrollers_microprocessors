@@ -4,11 +4,11 @@ import { liveExperiments } from '@/content/experiments/meta';
 export default function Hero() {
   const liveUnits = new Set(liveExperiments.map((e) => e.unit)).size;
 
+  // Credits/Semester dropped from hero stats — docs/14_QA_ROUND3_AND_DLMS_MATCH.md A3 (course
+  // code/credits still live in the Overview section, just not the hero).
   const stats = [
     { label: 'Experiments released', value: String(liveExperiments.length) },
     { label: 'Units live', value: String(liveUnits) },
-    { label: 'Credits', value: '3-0-2-4' },
-    { label: 'Semester', value: 'V' },
   ];
 
   return (
@@ -38,7 +38,7 @@ export default function Hero() {
             Course Overview
           </Link>
         </div>
-        <dl className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-8">
+        <dl className="mt-10 flex flex-wrap gap-8">
           {stats.map((s) => (
             <div key={s.label}>
               <dt className="text-sm text-text-muted-on-dark">{s.label}</dt>

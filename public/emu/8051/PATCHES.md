@@ -162,3 +162,31 @@ assumption about the app's internals, it just reuses the same one entry point a 
 `mcu_reset_rom()` resets `self.mem`/`self.xmem`/`self.rom` on the *same* `m` instance (confirmed in
 patch 1's writeup) so `xmem_write_hook` survives — the DAC scope keeps working after loading a
 freshly-assembled program this way too.
+
+## Patch 5 (QA round 3, A1) — `app.py`: ready/ack handshake for patch 4's `load-hex` message
+
+`docs/14_QA_ROUND3_AND_DLMS_MATCH.md` A1 reported the Unit 2 assembler "failing silently" on `lab-5`
+specifically. Root cause turned out to be **not** the assembler (`scripts/verify-assembler.ts` already
+proved `asm8051.ts` assembles `lab-5`'s exact program, `CPL A` included, byte-for-byte correctly) — it
+was a **race condition** in patch 4's `postMessage` bridge: the parent page had no way to know whether
+this iframe had actually finished booting Brython and registering its `message` listener before it
+posted `load-hex`, and `postMessage` has no delivery confirmation — a message posted too early just
+vanishes, leaving the emulator silently running its previous program with zero feedback to the user.
+(The React side's iframe also had `loading="lazy"`, which could delay the iframe starting to load at
+all until it scrolled into view — removed.)
+
+Fixed with an explicit three-message handshake, all still same-origin `postMessage`s:
+- On boot, right after `window.addEventListener('message', _on_message)` runs (i.e. the listener is
+  now actually live), `app.py` posts `{kind: 'emu-ready'}` to the parent. The parent (`Editor8051.tsx`)
+  disables its "Assemble & Load" button until this arrives, so there is no way to post `load-hex`
+  before this iframe can receive it.
+- `_on_message`'s `load-hex` handler now wraps the actual load sequence in `try/except` and posts back
+  either `{kind: 'hex-loaded'}` on success or `{kind: 'hex-load-failed', message: str(exc)}` on error,
+  instead of assuming success silently.
+- The parent starts a 5s timeout when it posts `load-hex`; if neither ack arrives in time, it shows a
+  "the simulator didn't confirm — try again" banner rather than either a false-positive green banner or
+  no banner at all.
+
+This makes the three possible outcomes (assembled+loaded / assembly error / load didn't confirm) each
+produce a distinct, visible banner — "never fail silently" now holds structurally, not just for the
+error cases the code happens to anticipate.

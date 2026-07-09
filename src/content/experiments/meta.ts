@@ -172,3 +172,15 @@ export function experimentsByUnit(unit: 1 | 2 | 3 | 4): ExperimentMeta[] {
 }
 
 export const liveExperiments = experiments.filter((e) => e.status === 'live');
+
+// For the Prev/Next buttons at the bottom of each experiment page (top-bar-only nav, no sidebar —
+// docs/14_QA_ROUND3_AND_DLMS_MATCH.md A6). `experiments` is already declared unit-by-unit in lab
+// order, so `liveExperiments` is already the correct walk order.
+export function getAdjacentExperiments(id: string): { prev: ExperimentMeta | null; next: ExperimentMeta | null } {
+  const index = liveExperiments.findIndex((e) => e.id === id);
+  if (index === -1) return { prev: null, next: null };
+  return {
+    prev: index > 0 ? liveExperiments[index - 1] : null,
+    next: index < liveExperiments.length - 1 ? liveExperiments[index + 1] : null,
+  };
+}

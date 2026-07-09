@@ -8,9 +8,11 @@ interface UnitEntry {
   hours: string;
   topics: string;
   lab: string;
-  labStatus: 'live' | 'coming-soon' | 'theory-only';
 }
 
+// Pilot shows only Units 1-2 (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A5 / 12_REDESIGN_BRIEF.md §6) —
+// Units 3-5 exist in the syllabus but are not displayed here at all until they release; no
+// "coming soon" placeholders. Full text for those units is kept in the docs for when they do.
 const units: UnitEntry[] = [
   {
     unit: 1,
@@ -19,7 +21,6 @@ const units: UnitEntry[] = [
     topics:
       'Evolution, signal description, architecture, addressing modes, min/max mode, instruction set (data transfer, arithmetic, logical, string, control transfer), 8086 interrupts.',
     lab: '16-bit addition; block transfer; sum of n; sort even/odd; data-transfer & logical ops.',
-    labStatus: 'live',
   },
   {
     unit: 2,
@@ -28,48 +29,16 @@ const units: UnitEntry[] = [
     topics:
       'µP vs µC, signal description, architecture, addressing modes, register set, instruction set, SFRs, interrupts, memory interfacing.',
     lab: "8-bit addition; 8-bit subtraction; 1's & 2's complement; Fibonacci.",
-    labStatus: 'live',
-  },
-  {
-    unit: 3,
-    title: 'Interfacing Devices',
-    hours: '15h',
-    topics: '8251, timers, I/O ports, ADC, stepper motor, keyboard, LCD.',
-    lab: 'Waveform generation (DAC); stepper motor.',
-    labStatus: 'coming-soon',
-  },
-  {
-    unit: 4,
-    title: 'ARM Microcontroller',
-    hours: '15h',
-    topics: 'RISC vs CISC, ARM design, core/data-flow, processor modes, registers, ARM & Thumb instruction sets, exceptions.',
-    lab: 'Sum + factorial; factorial + parity; largest/smallest of two.',
-    labStatus: 'coming-soon',
-  },
-  {
-    unit: 5,
-    title: 'Applications in Medicine',
-    hours: '15h',
-    topics:
-      'Mobile bio-signal recording, pulse oximeter (ARM), EOG appliances (PIC), EEG analysis, heart-rate monitor (ARM).',
-    lab: 'Theory only — hardware mini-project, not virtualised.',
-    labStatus: 'theory-only',
   },
 ];
 
-const statusLabel: Record<UnitEntry['labStatus'], string> = {
-  live: 'Live',
-  'coming-soon': 'Coming soon',
-  'theory-only': 'Theory only',
-};
-
-const statusClass: Record<UnitEntry['labStatus'], string> = {
-  // text-ok/text-warn on their own tint backgrounds fall short of WCAG AA for this small text
-  // (~3.4:1/~2.7:1) — use the darker -text variants instead (QA round 2 C5).
-  live: 'bg-ok/15 text-ok-text',
-  'coming-soon': 'bg-warn/15 text-warn-text',
-  'theory-only': 'bg-border text-text-muted',
-};
+const courseOutcomes = [
+  { code: 'CO1', text: 'Describe 8086 fundamentals.' },
+  { code: 'CO2', text: 'Implement 8051 concepts.' },
+  { code: 'CO3', text: 'Analyse interfacing devices.' },
+  { code: 'CO4', text: 'Apply RISC/ARM programming.' },
+  { code: 'CO5', text: 'Implement ARM for biomedical applications.' },
+];
 
 export default function Curriculum() {
   const [openUnit, setOpenUnit] = useState<number | null>(1);
@@ -99,8 +68,8 @@ export default function Curriculum() {
                       </span>
                       <span className="font-semibold text-text">{u.title}</span>
                       <span className="text-xs text-text-muted">{u.hours}</span>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass[u.labStatus]}`}>
-                        {statusLabel[u.labStatus]}
+                      <span className="rounded-full bg-ok/15 px-2.5 py-0.5 text-xs font-semibold text-ok-text">
+                        Live
                       </span>
                     </span>
                     <span className={`shrink-0 text-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true">
@@ -119,6 +88,17 @@ export default function Curriculum() {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-8 rounded-lab border border-border bg-bg p-5">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Course Outcomes</h3>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {courseOutcomes.map((co) => (
+              <li key={co.code} className="text-sm text-text">
+                <strong className="text-brand-700">{co.code}</strong> — {co.text}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

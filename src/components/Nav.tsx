@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import BrowseExperimentsDropdown from './BrowseExperimentsDropdown';
+import { experimentsByUnit } from '@/content/experiments/meta';
 
+// Nav order must equal section order on the home page (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A2).
 const links = [
   { href: '/', label: 'Home' },
   { href: '/#overview', label: 'Overview' },
-  { href: '/#curriculum', label: 'Curriculum' },
-  { href: '/#experiments', label: 'Experiments' },
   { href: '/#faculty', label: 'Faculty' },
+  { href: '/#experiments', label: 'Experiments' },
+  { href: '/#curriculum', label: 'Curriculum' },
   { href: '/#references', label: 'References' },
 ];
 
@@ -46,7 +49,7 @@ export default function Nav() {
           </span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden md:block">
+        <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
           <ul className="flex items-center gap-6 text-sm font-medium">
             {links.map((l) => (
               <li key={l.href}>
@@ -56,6 +59,7 @@ export default function Nav() {
               </li>
             ))}
           </ul>
+          <BrowseExperimentsDropdown />
         </nav>
 
         <button
@@ -87,6 +91,23 @@ export default function Nav() {
               </li>
             ))}
           </ul>
+
+          <div className="border-t border-border px-4 py-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Experiments</p>
+            <ul className="flex flex-col gap-1 text-sm">
+              {([1, 2] as const).flatMap((unit) => experimentsByUnit(unit).filter((e) => e.status === 'live')).map((e) => (
+                <li key={e.id}>
+                  <Link
+                    href={`/experiments/${e.id}`}
+                    className="block rounded-lab px-2 py-2 text-text hover:bg-surface"
+                    onClick={() => setOpen(false)}
+                  >
+                    {e.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
       )}
     </header>

@@ -259,12 +259,26 @@ def _on_message(event):
     if kind != 'load-hex':
         return
     hex_content = data.hex
-    mcu_reset_rom()
-    m.load_hex_file(hex_content)
-    disassemble_to_window_assRows(hex_content)
-    window.memType = 'RAM'
-    mcu_update_window_all()
-    window.render()
+    # Ack back to the parent so it can tell "loaded" from "message never arrived" (e.g. this
+    # iframe hadn't finished loading/booting Brython yet when the parent posted) instead of
+    # silently declaring success while the emulator keeps running its previous program.
+    try:
+        mcu_reset_rom()
+        m.load_hex_file(hex_content)
+        disassemble_to_window_assRows(hex_content)
+        window.memType = 'RAM'
+        mcu_update_window_all()
+        window.render()
+    except Exception as exc:
+        window.parent.postMessage({'kind': 'hex-load-failed', 'message': str(exc)}, window.location.origin)
+        return
+    window.parent.postMessage({'kind': 'hex-loaded'}, window.location.origin)
 
 
 window.addEventListener('message', _on_message)
+
+# Tell the parent the message listener is actually live. The iframe's own `load` event fires once
+# its HTML/JS resources are fetched, but Brython still has to parse and run this file after that —
+# the parent posting a load-hex message before this fires is exactly the race that let programs
+# assemble successfully (asm8051.ts has no bug) yet never visibly load, with zero feedback.
+window.parent.postMessage({'kind': 'emu-ready'}, window.location.origin)
