@@ -8,6 +8,10 @@
   --brand-500: #1e5fa8;
   --brand-100: #e7eef7;
   --accent: #0aa1dc;
+  /* --accent as TEXT on a light background is only ~2.9:1 — fails WCAG AA even for large text
+     (3:1). --accent itself stays reserved for backgrounds/borders/icons/the scope trace, where it
+     isn't rendering text; use --accent-text (≈5.0:1) for any accent-colored text. */
+  --accent-text: #0678a3;
 
   --bg: #ffffff;
   --surface: #f5f8fc;
@@ -44,6 +48,7 @@
   --color-brand-500: var(--brand-500);
   --color-brand-100: var(--brand-100);
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);

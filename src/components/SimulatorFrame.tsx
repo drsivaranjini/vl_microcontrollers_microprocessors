@@ -44,7 +44,9 @@ export default function SimulatorFrame({
   return (
     <div className="simulator-frame rounded-lab border border-border bg-surface shadow-(--shadow)">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">{title}</h2>
+        {/* Not a heading: this panel always sits inside a section that already has its own h2
+            ("▶ Embedded Simulator" etc.) — this is just a small label for the toolbar. */}
+        <p className="text-sm font-semibold uppercase tracking-wide text-text-muted">{title}</p>
         <div className="flex items-center gap-2">
           {toolbar}
           {src && (

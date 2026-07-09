@@ -12,7 +12,7 @@ export default function ExperimentsGrid() {
   return (
     <section id="experiments" className="scroll-mt-20 bg-bg py-16 sm:py-20">
       <div className="mx-auto max-w-(--container-lab) px-4 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-accent">Virtual Experiments</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Virtual Experiments</p>
         <h2 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">Run an experiment</h2>
         <p className="mt-2 max-w-2xl text-text-muted">
           Units 1 &amp; 2 are live for this pilot release — read the theory, run the program, and observe the

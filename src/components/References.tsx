@@ -17,7 +17,7 @@ export default function References() {
   return (
     <section id="references" className="scroll-mt-20 bg-bg py-16 sm:py-20">
       <div className="mx-auto max-w-(--container-lab) px-4 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-accent">References</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">References</p>
         <h2 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">Textbooks</h2>
         <ol className="mt-6 max-w-3xl list-decimal space-y-3 pl-5 text-text">
           {references.map((r, i) => (

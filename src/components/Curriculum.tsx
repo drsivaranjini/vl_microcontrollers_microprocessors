@@ -77,7 +77,7 @@ export default function Curriculum() {
   return (
     <section id="curriculum" className="scroll-mt-20 bg-surface py-16 sm:py-20">
       <div className="mx-auto max-w-(--container-lab) px-4 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-accent">Curriculum</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Curriculum</p>
         <h2 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">Units at a glance</h2>
 
         <div className="mt-8 divide-y divide-border rounded-lab border border-border bg-bg">

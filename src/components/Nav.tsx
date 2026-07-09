@@ -50,7 +50,7 @@ export default function Nav() {
           <ul className="flex items-center gap-6 text-sm font-medium">
             {links.map((l) => (
               <li key={l.href}>
-                <Link className="text-text transition-colors hover:text-accent" href={l.href}>
+                <Link className="text-text transition-colors hover:text-accent-text" href={l.href}>
                   {l.label}
                 </Link>
               </li>

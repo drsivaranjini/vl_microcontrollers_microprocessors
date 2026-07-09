@@ -44,7 +44,7 @@ export default function Editor8051({ initialSource }: Editor8051Props) {
   return (
     <div className="rounded-lab border border-border bg-surface shadow-(--shadow)">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">i8051emu</h2>
+        <p className="text-sm font-semibold uppercase tracking-wide text-text-muted">i8051emu</p>
         <div className="flex items-center gap-2">
           <a
             href={emuSrc}

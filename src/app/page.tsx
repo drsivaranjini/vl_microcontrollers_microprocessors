@@ -4,16 +4,27 @@ import Faculty from '@/components/Faculty';
 import ExperimentsGrid from '@/components/ExperimentsGrid';
 import Curriculum from '@/components/Curriculum';
 import References from '@/components/References';
+import Reveal from '@/components/Reveal';
 
 export default function Home() {
   return (
     <>
       <Hero />
-      <Overview />
-      <Faculty />
-      <ExperimentsGrid />
-      <Curriculum />
-      <References />
+      <Reveal>
+        <Overview />
+      </Reveal>
+      <Reveal>
+        <Faculty />
+      </Reveal>
+      <Reveal>
+        <ExperimentsGrid />
+      </Reveal>
+      <Reveal>
+        <Curriculum />
+      </Reveal>
+      <Reveal>
+        <References />
+      </Reveal>
     </>
   );
 }

@@ -29,24 +29,26 @@ export interface RegisterRow {
 
 export function RegistersTable({ rows }: { rows: RegisterRow[] }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Mnemonic</th>
-          <th>Meaning</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, i) => (
-          <tr key={i}>
-            <td>
-              <code>{r.m}</code>
-            </td>
-            <td>{renderInline(r.d)}</td>
+    <div className="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Mnemonic</th>
+            <th>Meaning</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td className="whitespace-nowrap">
+                <code>{r.m}</code>
+              </td>
+              <td>{renderInline(r.d)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -56,23 +58,27 @@ export interface OutputRow {
 
 export function OutputTable({ headers, rows }: { headers: string[]; rows: OutputRow[] }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, i) => (
-          <tr key={i}>
-            {r.cells.map((c, j) => (
-              <td key={j}>{renderInline(c)}</td>
+    <div className="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i}>{h}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              {r.cells.map((c, j) => (
+                <td key={j} className="whitespace-nowrap">
+                  {renderInline(c)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

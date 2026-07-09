@@ -13,7 +13,7 @@ export default function Faculty() {
   return (
     <section id="faculty" className="scroll-mt-20 bg-surface py-16 sm:py-20">
       <div className="mx-auto max-w-(--container-lab) px-4 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-accent">Faculty</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Faculty</p>
         <h2 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">Course Coordinator</h2>
 
         <div className="mt-8 flex max-w-md flex-col gap-4 rounded-lab border border-border bg-bg p-6 shadow-(--shadow) sm:flex-row sm:items-center">
@@ -28,7 +28,7 @@ export default function Faculty() {
             <p className="font-semibold text-text">{faculty.name}</p>
             <p className="text-sm text-text-muted">{faculty.designation}</p>
             <p className="text-sm text-text-muted">{faculty.department}</p>
-            <a href={`mailto:${faculty.email}`} className="mt-1 inline-block text-sm text-accent hover:underline">
+            <a href={`mailto:${faculty.email}`} className="mt-1 inline-block text-sm text-accent-text hover:underline">
               {faculty.email}
             </a>
             <div className="mt-3">
