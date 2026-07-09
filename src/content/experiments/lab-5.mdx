@@ -1,0 +1,109 @@
+---
+id: lab-5
+unit: 2
+order: 3
+title: "One's and Two's Complement of a Number (8051)"
+device: '8051'
+engine: 'i8051emu'
+widget: 'none'
+hexFile: '/hex/lab5-complement.hex'
+aim: "To find the 1's and 2's complement of an 8-bit number using the 8051 microcontroller."
+objectives:
+  - "Compute a 1's complement with CPL A (bitwise NOT)."
+  - "Derive the 2's complement by adding 1 to the 1's complement."
+  - 'Read and write external data memory through an auto-incrementing data pointer.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+The 1's complement of a binary number flips every bit (`CPL A` does exactly this to the accumulator).
+The 2's complement is the 1's complement plus 1 (`INC A`) — the standard way to represent a negative
+number so that addition naturally handles subtraction. The program reads one input byte via `MOVX
+A,@DPTR`, complements it, writes the 1's complement out, increments the accumulator for the 2's
+complement, and writes that out too.
+
+> **Note on this listing:** the manual's mnemonic table advances `DPTR` with `INC DPTR` **before** each
+> `MOVX @DPTR,A` write, so tracing the program shows the 1's complement lands one byte **after** the
+> input address, and the 2's complement one byte after that — e.g. input at `6500H` → 1's complement at
+> `6501H` → 2's complement at `6502H`. (The manual's own printed output table labels these `6500H`/
+> `6501H`, which would only be true if the writes happened *before* the `INC DPTR`s — a labelling slip
+> against its own listing.) The addresses below are what the program you can actually run here produces.
+
+## Registers / Instructions Used
+
+| Mnemonic          | Meaning                                                                |
+| ------------------ | ------------------------------------------------------------------- |
+| `MOV DPTR,#6500H`  | Point the data pointer at the input byte.                             |
+| `MOVX A,@DPTR`     | Read the input byte into the accumulator.                              |
+| `CPL A`            | Complement every bit of the accumulator (1's complement).              |
+| `INC DPTR`         | Advance the pointer to the next output slot.                           |
+| `MOVX @DPTR,A`     | Write the 1's complement.                                              |
+| `INC A`            | Add 1 to the accumulator (1's complement → 2's complement).            |
+| `INC DPTR`         | Advance the pointer to the next output slot.                           |
+| `MOVX @DPTR,A`     | Write the 2's complement.                                              |
+| `RET`              | Return to the caller.                                                   |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="Load 03H at external address 6500H first, then click the upload icon and load the downloaded program.hex, then Run/Step and inspect external memory at 6501H/6502H."
+>
+  <a
+    href={`${import.meta.env.BASE_URL}hex/lab5-complement.hex`}
+    download
+    class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+  >
+    ⬇ Download program.hex
+  </a>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`MOV DPTR, #6500H  ; point at the input byte
+MOVX A, @DPTR      ; read it
+CPL A              ; A = 1's complement
+INC DPTR
+MOVX @DPTR, A      ; write the 1's complement
+INC A              ; A = 2's complement
+INC DPTR
+MOVX @DPTR, A      ; write the 2's complement
+RET`}
+/>
+
+## Expected Output / Observation
+
+| Address | Value | Meaning              |
+| ------- | ----- | --------------------- |
+| `6500H` | `03H` | Input (unchanged)      |
+| `6501H` | `FCH` | 1's complement of 03H  |
+| `6502H` | `FDH` | 2's complement of 03H  |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: "What is the 1's complement, in one sentence?",
+      a: "The bitwise NOT of every bit in the number — 03H (0000 0011) becomes FCH (1111 1100).",
+    },
+    {
+      q: "Why is the 2's complement just the 1's complement plus one?",
+      a: "That is its definition for binary numbers, and it is exactly what makes two's-complement subtraction work as ordinary addition — adding a number to its two's complement always yields zero (mod 2^n).",
+    },
+    {
+      q: 'Is the accumulator in the 8051 bit-addressable?',
+      a: 'Yes — the accumulator (address E0H in SFR space) is one of the bit-addressable special function registers, so individual bits of A can be tested/set with bit instructions, not just whole-byte ones.',
+    },
+  ]}
+/>

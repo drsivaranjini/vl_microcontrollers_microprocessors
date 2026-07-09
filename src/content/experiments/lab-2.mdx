@@ -1,0 +1,95 @@
+---
+id: lab-2
+unit: 1
+order: 4
+title: 'Sum of N Numbers (8086)'
+device: '8086'
+engine: '8086emu'
+widget: 'none'
+aim: 'To find the sum of n numbers using the 8086 microprocessor.'
+objectives:
+  - 'Read a count n from memory and use it to drive a counted loop.'
+  - 'Accumulate a running sum across n iterations using ADD and a decrementing counter.'
+  - 'Use JNZ to loop until the counter reaches zero.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8086/index.html`;
+
+## Theory
+
+Rather than a predefined array, this program sums the first `n` natural numbers, where `n` itself is
+read from memory at `2000H`. `BL` counts up from 1 while `CL` (initialised from `n`) counts down; each
+pass adds the current count (`BL`) into a running total (`AL`), increments `BL`, decrements `CL`, and
+loops via `JNZ` until `CL` reaches 0. The final sum is stored at `2002H`.
+
+## Registers / Instructions Used
+
+| Mnemonic       | Meaning                                                             |
+| -------------- | --------------------------------------------------------------------- |
+| `MOV SI,2000H` | Point at the memory location holding `n`.                             |
+| `MOV CL,[SI]`  | Load `n` into `CL` as the loop counter.                                |
+| `MOV AL,00H`   | Initialise the running sum to 0.                                       |
+| `MOV BL,01H`   | Initialise the counting value to 1.                                    |
+| `ADD AL,BL`    | Add the current counting value into the running sum.                   |
+| `INC BL`       | Advance the counting value to the next number.                         |
+| `DEC CL`       | Decrement the remaining-iteration counter.                             |
+| `JNZ Back`     | Loop back while `CL != 0`.                                             |
+| `MOV DI,2002H` | Point at where the result is stored.                                    |
+| `MOV [DI],AX`  | Store the final sum.                                                    |
+| `HLT`          | Halt — end of program.                                                   |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="8086 Emulator"
+  src={emuSrc}
+  hint="Paste the program below, load n at 2000H (e.g. 05H), assemble, then Run/Step and inspect memory at 2002H."
+/>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`MOV SI,2000H   ; point at n
+MOV CL,[SI]    ; CL = n
+MOV AL,00H     ; running sum = 0
+MOV BL,01H     ; first number to add
+Back:
+ADD AL,BL      ; sum += BL
+INC BL         ; next number
+DEC CL         ; one fewer iteration remaining
+JNZ Back       ; loop while CL != 0
+MOV DI,2002H   ; destination for result
+MOV [DI],AX    ; store the sum
+HLT            ; end of program`}
+/>
+
+## Expected Output / Observation
+
+| n (at 2000H) | Sum 1+2+...+n (at 2002H) |
+| ------------ | -------------------------- |
+| `05H`        | `0FH` (1+2+3+4+5 = 15)     |
+| `04H`        | `0AH` (1+2+3+4 = 10)       |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why is BL used to hold the "current number" rather than reusing CL?',
+      a: 'CL is being consumed as the countdown loop control (decremented each pass), so a separate register (BL) is needed to count up the actual numbers being summed at the same time.',
+    },
+    {
+      q: 'What is the largest n this program can correctly handle, and why?',
+      a: 'AL is 8-bit, so the sum can overflow past FFH (255) for large enough n (n=23 already sums to 276); the program does not check for or handle overflow.',
+    },
+    {
+      q: 'Why is n read from memory rather than hardcoded as an immediate value?',
+      a: 'Reading n from memory (2000H) lets the same assembled program sum a different count of numbers just by changing the input data, without reassembling the code.',
+    },
+  ]}
+/>

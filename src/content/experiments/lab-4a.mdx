@@ -1,0 +1,107 @@
+---
+id: lab-4a
+unit: 2
+order: 1
+title: '8-Bit Addition (8051)'
+device: '8051'
+engine: 'i8051emu'
+widget: 'none'
+hexFile: '/hex/lab4a-add.hex'
+aim: 'To perform 8-bit addition using the 8051 microcontroller.'
+objectives:
+  - 'Add two 8-bit values held in the accumulator and a working register.'
+  - 'Detect carry-out with JNC and record it separately from the sum.'
+  - 'Store the result and carry flag to external data memory via MOVX.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+Two 8-bit operands (`23H` and `11H`) are loaded into the accumulator and `R1`. `ADD A,R1` sums them,
+setting the carry flag if the result overflowed 8 bits. `JNC` skips the carry-increment when there was
+no overflow. The sum is written to external memory at `9200H` via the data pointer, and the carry
+(`0` or `1`) is written right after it at `9201H`.
+
+## Registers / Instructions Used
+
+| Mnemonic         | Meaning                                                              |
+| ----------------- | ------------------------------------------------------------------- |
+| `MOV A,#23H`      | Load the first operand into the accumulator.                         |
+| `MOV R1,#11H`     | Load the second operand into `R1`.                                    |
+| `MOV R2,#00H`     | Initialise the carry counter to 0.                                    |
+| `ADD A,R1`        | Add `R1` into the accumulator; sets the carry flag on overflow.       |
+| `JNC Ahead`       | Skip the carry increment if there was no overflow.                    |
+| `INC R2`          | Record that a carry occurred.                                         |
+| `MOV DPTR,#9200H` | Point the data pointer at the result location.                        |
+| `MOVX @DPTR,A`    | Write the accumulator (sum) to external memory.                       |
+| `INC DPTR`        | Advance the pointer to the next byte.                                  |
+| `MOV A,R2`        | Move the carry value into the accumulator to write it out.            |
+| `MOVX @DPTR,A`    | Write the carry to external memory.                                    |
+| `LCALL 00BBH`     | Call the monitor's stop routine to halt execution.                     |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="This experiment's program is pre-assembled — click the upload icon in i8051emu's toolbar and load the downloaded program.hex below, then Run/Step and inspect external memory at 9200H/9201H."
+>
+  <a
+    href={`${import.meta.env.BASE_URL}hex/lab4a-add.hex`}
+    download
+    class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+  >
+    ⬇ Download program.hex
+  </a>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`MOV A, #23H       ; first operand
+MOV R1, #11H      ; second operand
+MOV R2, #00H      ; carry = 0
+ADD A, R1         ; A = A + R1
+JNC Ahead         ; skip if no carry
+INC R2            ; record the carry
+Ahead:
+MOV DPTR, #9200H  ; point at the result location
+MOVX @DPTR, A     ; write the sum
+INC DPTR
+MOV A, R2         ; move carry into A
+MOVX @DPTR, A     ; write the carry
+LCALL 00BBH       ; stop`}
+/>
+
+## Expected Output / Observation
+
+| Address | Value | Meaning        |
+| ------- | ----- | -------------- |
+| `9200H` | `34H` | Sum (23H + 11H) |
+| `9201H` | `00H` | Carry (none)    |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why is the carry stored as a separate byte rather than combined into a 16-bit sum?',
+      a: 'The accumulator is only 8 bits wide, so ADD A,R1 can only ever produce an 8-bit result plus a 1-bit carry flag — the carry has to be captured and stored separately if it needs to be preserved.',
+    },
+    {
+      q: 'What does LCALL 00BBH do?',
+      a: 'It calls a fixed monitor-ROM routine (built into this address on the physical 8051 trainer kit) that stops program execution — the equivalent of a HLT on the 8086 side, but implemented as a subroutine call rather than a dedicated halt instruction, since 8051 has no HLT.',
+    },
+    {
+      q: 'Why use INC DPTR between the two MOVX writes instead of loading a new address with MOV DPTR?',
+      a: 'The destination for the carry (9201H) is exactly one byte past the sum (9200H); incrementing DPTR is shorter and faster than reloading a full 16-bit immediate for an adjacent address.',
+    },
+  ]}
+/>

@@ -1,0 +1,108 @@
+---
+id: lab-4b
+unit: 2
+order: 2
+title: '8-Bit Subtraction (8051)'
+device: '8051'
+engine: 'i8051emu'
+widget: 'none'
+hexFile: '/hex/lab4b-sub.hex'
+aim: 'To perform 8-bit subtraction using the 8051 microcontroller.'
+objectives:
+  - 'Subtract two 8-bit values using SUBB (subtract with borrow).'
+  - 'Detect a borrow with JNC and record it separately from the difference.'
+  - 'Store the result and borrow flag to external data memory via MOVX.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+Mirrors the addition experiment: `22H` is loaded into the accumulator, `02H` into `R1`, and `SUBB A,R1`
+subtracts `R1` (plus any incoming borrow — `R2` is pre-cleared so there isn't one) from the accumulator.
+A borrow out of the subtraction clears the carry flag on the 8051's `SUBB`, so `JNC` here detects the
+*borrow-occurred* case, and the difference plus a borrow flag are written to external memory the same
+way as the addition experiment.
+
+## Registers / Instructions Used
+
+| Mnemonic         | Meaning                                                              |
+| ----------------- | ------------------------------------------------------------------- |
+| `MOV A,#22H`      | Load the minuend into the accumulator.                                |
+| `MOV R1,#02H`     | Load the subtrahend into `R1`.                                        |
+| `MOV R2,#00H`     | Initialise the borrow counter to 0.                                   |
+| `SUBB A,R1`       | Subtract `R1` (and any incoming borrow) from the accumulator.         |
+| `JNC Ahead`       | Skip the borrow increment if there was no borrow.                     |
+| `INC R2`          | Record that a borrow occurred.                                        |
+| `MOV DPTR,#9200H` | Point the data pointer at the result location.                        |
+| `MOVX @DPTR,A`    | Write the accumulator (difference) to external memory.                |
+| `INC DPTR`        | Advance the pointer to the next byte.                                  |
+| `MOV A,R2`        | Move the borrow value into the accumulator to write it out.           |
+| `MOVX @DPTR,A`    | Write the borrow to external memory.                                   |
+| `LCALL 00BBH`     | Call the monitor's stop routine to halt execution.                     |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="This experiment's program is pre-assembled — click the upload icon in i8051emu's toolbar and load the downloaded program.hex below, then Run/Step and inspect external memory at 9200H/9201H."
+>
+  <a
+    href={`${import.meta.env.BASE_URL}hex/lab4b-sub.hex`}
+    download
+    class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+  >
+    ⬇ Download program.hex
+  </a>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`MOV A, #22H       ; minuend
+MOV R1, #02H      ; subtrahend
+MOV R2, #00H      ; borrow = 0
+SUBB A, R1        ; A = A - R1 (- any incoming borrow)
+JNC Ahead         ; skip if no borrow
+INC R2            ; record the borrow
+Ahead:
+MOV DPTR, #9200H  ; point at the result location
+MOVX @DPTR, A     ; write the difference
+INC DPTR
+MOV A, R2         ; move borrow into A
+MOVX @DPTR, A     ; write the borrow
+LCALL 00BBH       ; stop`}
+/>
+
+## Expected Output / Observation
+
+| Address | Value | Meaning              |
+| ------- | ----- | --------------------- |
+| `9200H` | `20H` | Difference (22H − 02H) |
+| `9201H` | `00H` | Borrow (none)          |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why SUBB instead of a plain SUB?',
+      a: '8051 has no plain 8-bit SUB instruction — SUBB (subtract with borrow) is the only subtract opcode, so a clean subtraction just needs the carry/borrow flag cleared beforehand (as R2/the flag state effectively is here) so no unwanted borrow-in is subtracted.',
+    },
+    {
+      q: 'What would this program compute if R1 were larger than the initial accumulator value?',
+      a: 'The subtraction would underflow, setting the carry (borrow) flag, so R2 would be incremented to 1 and the accumulator would hold the two\'s-complement wraparound "negative" result as an unsigned byte.',
+    },
+    {
+      q: 'How does this program\'s structure compare to the 8-bit addition experiment?',
+      a: 'Identical control flow (JNC/INC/MOVX×2/LCALL) — only the arithmetic instruction (SUBB vs ADD) and operand values differ, showing how the same result-plus-flag pattern generalises across 8051 arithmetic ops.',
+    },
+  ]}
+/>

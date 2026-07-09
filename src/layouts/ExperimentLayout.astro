@@ -40,7 +40,17 @@ const { title, unit, device, aim, objectives = [] } = Astro.props;
       </div>
     </header>
 
-    <div class="prose prose-slate max-w-none prose-headings:font-semibold prose-headings:text-text prose-p:text-text prose-li:text-text prose-pre:bg-transparent prose-pre:p-0">
+    <div
+      class="prose prose-slate max-w-none
+        prose-headings:font-semibold prose-headings:text-text
+        prose-p:text-text prose-li:text-text prose-strong:text-text
+        prose-pre:bg-transparent prose-pre:p-0
+        prose-table:text-text prose-th:text-text prose-th:border-border prose-td:border-border
+        [&_:not(pre)>code]:rounded [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border
+        [&_:not(pre)>code]:bg-surface [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5
+        [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.875em] [&_:not(pre)>code]:font-normal
+        [&_:not(pre)>code]:text-text [&_:not(pre)>code]:before:content-none [&_:not(pre)>code]:after:content-none"
+    >
       <slot />
     </div>
   </article>

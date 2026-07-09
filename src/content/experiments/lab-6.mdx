@@ -1,0 +1,125 @@
+---
+id: lab-6
+unit: 2
+order: 4
+title: 'Fibonacci Series (8051)'
+device: '8051'
+engine: 'i8051emu'
+widget: 'none'
+hexFile: '/hex/lab6-fibonacci.hex'
+aim: 'To generate a Fibonacci series using the 8051 microcontroller.'
+objectives:
+  - 'Seed the first two Fibonacci numbers directly in internal RAM.'
+  - 'Generate each subsequent term as the sum of the previous two, using indirect addressing via R1.'
+  - 'Control the number of terms generated with a DJNZ-based countdown loop.'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8051/index.html`;
+
+## Theory
+
+The first two terms (`0`, `1`) are written directly to internal RAM starting at `20H`, addressed
+indirectly through `R1` (`@R1`). Each loop iteration reads the *previous* term (`R1` stepped back by one)
+into the accumulator, adds the term before that, and stores the new term two slots ahead of where it
+started — walking `R1` forward by the same two-step pattern each pass. `R0` counts down the number of
+additional terms to generate, and `DJNZ R0,BACK` repeats until it reaches zero.
+
+## Registers / Instructions Used
+
+| Mnemonic          | Meaning                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| `MOV R0,#0AH`      | Number of additional terms to generate (10, here).                       |
+| `MOV R1,#20H`       | Point `R1` at the start of the series in internal RAM.                    |
+| `MOV @R1,#00H`      | Seed the first term (`0`) at `20H`.                                       |
+| `INC R1`            | Advance to the next slot.                                                 |
+| `MOV @R1,#01H`       | Seed the second term (`1`) at `21H`.                                      |
+| `MOV A,@R1`         | Read the most recent term (indirect via `R1`).                            |
+| `DEC R1`            | Step back to the term before that.                                        |
+| `ADD A,@R1`         | Add it to the accumulator — `A` now holds the new term.                    |
+| `INC R1` (×2)       | Step forward two slots (past the "before" term and the "recent" term).    |
+| `MOV @R1,A`         | Store the new term.                                                       |
+| `DJNZ R0,BACK`       | Decrement `R0`; loop while more terms remain.                             |
+| `SJMP HERE`          | Infinite self-loop — halt.                                                |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="i8051emu"
+  src={emuSrc}
+  chromiumNotice={true}
+  hint="Click the upload icon in i8051emu's toolbar and load the downloaded program.hex below, then Run/Step and inspect internal RAM from 20H onward."
+>
+  <a
+    href={`${import.meta.env.BASE_URL}hex/lab6-fibonacci.hex`}
+    download
+    class="inline-flex items-center gap-1 rounded-lab border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-900/5"
+  >
+    ⬇ Download program.hex
+  </a>
+</SimulatorFrame>
+
+## Sample Program
+
+<CodeBlock
+  lang="asm"
+  code={`MOV R0,#0AH    ; 10 more terms to generate
+MOV R1,#20H    ; series starts at internal RAM 20H
+MOV @R1,#00H   ; term[0] = 0
+INC R1
+MOV @R1,#01H   ; term[1] = 1
+BACK:
+MOV A,@R1      ; A = most recent term
+DEC R1
+ADD A,@R1      ; A += term before that
+INC R1
+INC R1
+MOV @R1,A      ; store the new term
+DJNZ R0,BACK   ; loop for the remaining terms
+HERE:
+SJMP HERE      ; halt`}
+/>
+
+> **Note:** the manual's own opcode column prints `7A` for `MOV R1,#20H` — that is actually the encoding
+> for `MOV R2,#20H` (register R2, not R1). Every other instruction in this same listing (`INC R1`, `MOV
+> A,@R1`, `DEC R1`, `MOV @R1,A`) is unambiguously R1-based and matches the manual's own prose exactly, so
+> this looks like an isolated transcription slip in the manual's opcode table. The pre-assembled program
+> above uses the correct `MOV R1,#20H` encoding (`79 20`) — verified by running it and confirming it
+> produces the Fibonacci sequence below.
+
+## Expected Output / Observation
+
+| Address | Value |
+| ------- | ----- |
+| `20H`   | `00H` |
+| `21H`   | `01H` |
+| `22H`   | `01H` |
+| `23H`   | `02H` |
+| `24H`   | `03H` |
+| `25H`   | `05H` |
+| `26H`   | `08H` |
+| `27H`   | `0DH` |
+| `28H`   | `15H` |
+| `29H`   | `22H` |
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does R1 move backward (DEC R1) before the ADD, then forward twice?',
+      a: 'DEC R1 reaches the term before the most-recently-read one, so ADD A,@R1 sums the two previous terms; INC R1 twice then lands two slots past where the "most recent" read started — exactly the next unused slot.',
+    },
+    {
+      q: 'What does DJNZ stand for, and what does it do here?',
+      a: '"Decrement and Jump if Not Zero" — it decrements R0 and, if the result is not zero, jumps to BACK to generate another term; once R0 reaches zero it falls through and the loop ends.',
+    },
+    {
+      q: 'Why does the series eventually stop being useful past a certain number of terms?',
+      a: 'Each term is stored in a single byte, so once a Fibonacci number exceeds 255 (FFH) it silently wraps around (8-bit overflow) rather than growing further — this program does not detect or handle that.',
+    },
+  ]}
+/>

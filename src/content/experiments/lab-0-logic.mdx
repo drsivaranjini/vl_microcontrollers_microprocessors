@@ -1,0 +1,152 @@
+---
+id: lab-0-logic
+unit: 1
+order: 1
+title: 'Data Transfer, Logical & Arithmetic Operations (8086)'
+device: '8086'
+engine: '8086emu'
+widget: 'none'
+aim: 'To learn the registers, instruction set, and data-transfer/logical/arithmetic operations of the 8086 microprocessor using AND, OR, ADD, SUB, MUL and DIV on 16-bit numbers.'
+objectives:
+  - 'Use immediate and direct addressing to move data between registers and memory.'
+  - 'Mask and set bits with AND/OR (Lab 0-A).'
+  - 'Perform 16-bit addition, subtraction, multiplication, and division (Lab 0-B).'
+---
+
+import SimulatorFrame from '../../components/SimulatorFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import VivaAccordion from '../../components/VivaAccordion.astro';
+
+export const emuSrc = `${import.meta.env.BASE_URL}emu/8086/index.html`;
+
+## Theory
+
+**0-A — Logical operations.** The logical `AND` instruction is used for masking off bits: bits to be
+cleared are ANDed with 0, bits to stay high are ANDed with 1 — masking with `0F0F` keeps only the low
+nibble of each byte in a word. The logical `OR` sets bits selectively: ORing a bit with 1 always sets it,
+regardless of its previous value.
+
+**0-B — Arithmetic operations.** `ADD`/`SUB` require one operand in a register (here `AX`), with the
+other operand in a register, memory, or immediate. `MUL` performs unsigned multiplication: an 8-bit
+multiply produces a 16-bit result in `AX`; a 16-bit multiply produces a 32-bit result split across
+`DX:AX` (high word in `DX`, low word in `AX`). `DIV` divides `DX:AX` by the operand, leaving the quotient
+in `AX` and the remainder in `DX`.
+
+## Registers / Instructions Used
+
+| Mnemonic        | Meaning                                                              |
+| ---------------- | ------------------------------------------------------------------- |
+| `MOV AX,[1100]`   | Load the 16-bit word at memory address `1100H` into `AX`.           |
+| `AND AX,0F0F`     | Bitwise AND `AX` with the immediate mask `0F0FH`.                    |
+| `OR AX,0F0F`      | Bitwise OR `AX` with the immediate `0F0FH`.                          |
+| `MOV [1200],AX`   | Store `AX` to memory address `1200H`.                                |
+| `ADD AX,BX`       | 16-bit addition; result in `AX`, carry/overflow reflected in flags. |
+| `SUB AX,BX`       | 16-bit subtraction; result in `AX`.                                  |
+| `MUL BX`          | Unsigned multiply `AX × BX`; 32-bit result in `DX:AX`.                |
+| `DIV BX`          | Unsigned divide `DX:AX ÷ BX`; quotient in `AX`, remainder in `DX`.    |
+| `HLT`             | Halt — end of program.                                                |
+
+## ▶ Embedded Simulator
+
+<SimulatorFrame
+  title="8086 Emulator"
+  src={emuSrc}
+  hint="Paste any of the programs below into the assembler pane, assemble, then Run/Step and inspect AX/BX/DX and the destination memory address."
+/>
+
+## Sample Programs
+
+### Logical AND (masking)
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, [1100]  ; load operand
+AND AX, 0F0F    ; mask: keep only the low nibble of each byte
+MOV [1200], AX  ; store result
+HLT`}
+/>
+
+### Logical OR (bit setting)
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, 0000    ; start from 0
+OR AX, 0F0F     ; set the low nibble of each byte
+MOV [1200], AX  ; store result
+HLT`}
+/>
+
+### Addition (without carry)
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, [1100]
+MOV BX, [1102]
+ADD AX, BX
+MOV [1200], AX
+HLT`}
+/>
+
+### Subtraction (without borrow)
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, [1100]
+MOV BX, [1102]
+SUB AX, BX
+MOV [1200], AX
+HLT`}
+/>
+
+### Multiplication
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, [1100]
+MOV BX, [1102]
+MUL BX          ; DX:AX = AX * BX
+MOV [1200], AX  ; low word
+MOV [1202], DX  ; high word
+HLT`}
+/>
+
+### Division
+
+<CodeBlock
+  lang="asm"
+  code={`MOV AX, [1100]
+MOV BX, [1102]
+DIV BX          ; AX = quotient, DX = remainder
+MOV [1200], AX
+MOV [1202], DX
+HLT`}
+/>
+
+## Expected Output / Observation
+
+For the logical operations, write down the truth table of AND/OR before running, then confirm the
+masked/set result at `1200H` matches it. For the arithmetic operations, load two 16-bit operands at
+`1100H`/`1102H` before running and confirm the result at `1200H` (and `1202H` for MUL/DIV's second word).
+
+## Viva Questions
+
+<VivaAccordion
+  items={[
+    {
+      q: 'Why does ANDing with 0F0F mask off the high nibble of each byte?',
+      a: 'AND only keeps a bit where both operand bits are 1. Since 0F0F has 0-bits in the high nibble positions of each byte, ANDing forces those bits to 0 regardless of the source data, while the low-nibble bits pass through unchanged wherever the source bit is 1.',
+    },
+    {
+      q: 'Why does the multiplication result need two memory words (1200H and 1202H)?',
+      a: 'A 16-bit × 16-bit unsigned multiply can produce up to a 32-bit result, split across DX (high word) and AX (low word) — one 16-bit memory word cannot hold the full product in general.',
+    },
+    {
+      q: 'What is left in DX after DIV BX, and why does it matter?',
+      a: 'DX holds the remainder of the division. It matters because 8086 integer division discards fractional results — the remainder is the only way to recover what did not divide evenly.',
+    },
+    {
+      q: 'What is the difference between MOV AX,[1100] and MOV [1200],AX?',
+      a: 'The first reads memory into a register (address in brackets is the source); the second writes a register to memory (address in brackets is the destination) — the bracket denotes "memory at this address" on whichever side it appears.',
+    },
+  ]}
+/>

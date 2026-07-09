@@ -25,7 +25,31 @@ const {
 <div class="simulator-frame rounded-lab border border-border bg-surface shadow-(--shadow)">
   <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
     <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">{title}</h2>
-    <slot name="toolbar" />
+    <div class="flex items-center gap-2">
+      <slot name="toolbar" />
+      {
+        src && (
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-lab border border-border px-2 py-1 text-xs font-medium text-text-muted hover:bg-brand-900/5 hover:text-text"
+          >
+            ↗ Open in new tab
+          </a>
+        )
+      }
+      {
+        (src || !linkOutUrl) && (
+          <button
+            type="button"
+            class="fullscreen-btn rounded-lab border border-border px-2 py-1 text-xs font-medium text-text-muted hover:bg-brand-900/5 hover:text-text"
+          >
+            ⛶ Fullscreen
+          </button>
+        )
+      }
+    </div>
   </div>
 
   {hint && <p class="border-b border-border bg-brand-900/5 px-4 py-2 text-sm text-text-muted">{hint}</p>}
@@ -38,14 +62,14 @@ const {
     )
   }
 
-  <div class="flex flex-col gap-4 p-4">
+  <div class="simulator-frame-body flex flex-col gap-4 bg-surface p-4">
     {
       src && (
         <iframe
           src={src}
           title={title}
           loading="lazy"
-          class="min-h-[420px] w-full rounded-lab border border-border sm:min-h-[520px]"
+          class="h-[min(80vh,860px)] min-h-[480px] w-full rounded-lab border border-border"
         />
       )
     }
@@ -70,3 +94,30 @@ const {
     <slot />
   </div>
 </div>
+
+<style>
+  .simulator-frame-body:fullscreen {
+    height: 100vh;
+    overflow: auto;
+  }
+  .simulator-frame-body:fullscreen iframe {
+    height: 100%;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.fullscreen-btn').forEach((btn) => {
+    const panel = btn.closest('.simulator-frame')?.querySelector<HTMLElement>('.simulator-frame-body');
+    if (!panel) return;
+    btn.addEventListener('click', async () => {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await panel.requestFullscreen();
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      btn.textContent = document.fullscreenElement === panel ? '⛶ Exit fullscreen' : '⛶ Fullscreen';
+    });
+  });
+</script>
