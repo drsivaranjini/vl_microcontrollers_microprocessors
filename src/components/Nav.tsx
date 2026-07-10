@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import BrowseExperimentsDropdown from './BrowseExperimentsDropdown';
+import Logos from './Logos';
 import { experimentsByUnit } from '@/content/experiments/meta';
 
 // Nav order must equal section order on the home page (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A2).
@@ -15,7 +16,12 @@ const links = [
   { href: '/#references', label: 'References' },
 ];
 
-export default function Nav() {
+interface NavProps {
+  srmLogo: string | null;
+  bmeLogo: string | null;
+}
+
+export default function Nav({ srmLogo, bmeLogo }: NavProps) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -38,11 +44,7 @@ export default function Nav() {
         }`}
       >
         <Link href="/" className="flex items-center gap-3">
-          {/* TODO: replace with the official SRM Institute + BME department logo image files
-              (see docs/12_REDESIGN_BRIEF.md §4) — none were available to source automatically. */}
-          <span className="flex h-9 w-9 items-center justify-center rounded-lab bg-brand-700 text-sm font-bold text-white">
-            SRM
-          </span>
+          <Logos srmLogo={srmLogo} bmeLogo={bmeLogo} size={36} />
           <span className="hidden flex-col leading-tight sm:flex">
             <span className="text-sm font-semibold text-brand-900">21BMC302J Virtual Lab</span>
             <span className="text-xs text-text-muted">Dept. of Biomedical Engineering</span>
@@ -60,6 +62,12 @@ export default function Nav() {
             ))}
           </ul>
           <BrowseExperimentsDropdown />
+          <Link
+            href="/#experiments"
+            className="rounded-lab bg-accent px-4 py-2 text-sm font-semibold text-brand-900 transition hover:bg-accent-600"
+          >
+            Start Lab
+          </Link>
         </nav>
 
         <button

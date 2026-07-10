@@ -1,38 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 /**
- * Fades + slightly lifts children in as they scroll into view. Respects
- * prefers-reduced-motion (the transition duration is globally zeroed by CSS for that case, so
- * this still "works" — it just snaps instantly instead of animating).
+ * Fades + slightly lifts children in as they scroll into view (Framer Motion, per
+ * docs/12_REDESIGN_BRIEF.md v3 §1 stack choice). Respects prefers-reduced-motion via Framer's own
+ * hook — motion values are JS-driven, not CSS transitions, so the global CSS
+ * prefers-reduced-motion override in globals.css doesn't reach them on its own.
  */
 export default function Reveal({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -80px 0px' },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ease-out ${visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'} ${className}`}
+    <motion.div
+      className={className}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '0px 0px -80px 0px', amount: 0.1 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

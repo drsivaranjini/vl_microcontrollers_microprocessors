@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { liveExperiments } from '@/content/experiments/meta';
+import { assets } from '@/lib/assets';
+import Logos from './Logos';
+import WaveDivider from './WaveDivider';
 
 export default function Hero() {
   const liveUnits = new Set(liveExperiments.map((e) => e.unit)).size;
@@ -12,22 +15,28 @@ export default function Hero() {
   ];
 
   return (
-    <section className="bg-gradient-to-b from-brand-900 to-brand-700 text-text-on-dark">
-      <div className="mx-auto max-w-(--container-lab) px-4 py-16 sm:px-6 sm:py-20">
-        <p className="text-sm font-semibold uppercase tracking-wide text-text-muted-on-dark">
-          Department of Biomedical Engineering · 21BMC302J
+    <section className="hero-starfield relative overflow-hidden bg-gradient-to-b from-brand-800 to-brand-700 text-text-on-dark">
+      <div className="relative mx-auto max-w-(--container-lab) px-4 py-16 sm:px-6 sm:py-20">
+        <Logos srmLogo={assets.srmLogo} bmeLogo={assets.bmeLogo} onDark size={40} />
+
+        <p className="mt-6 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted-on-dark backdrop-blur">
+          B.Tech Biomedical Engineering · Semester V · 21BMC302J
         </p>
-        <h1 className="mt-2 max-w-3xl text-3xl font-bold sm:text-4xl lg:text-5xl">
-          Microcontrollers &amp; its Application in Medicine — Virtual Lab
+
+        <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
+          <span className="block text-text-on-dark">21BMC302J Virtual Lab</span>
+          <span className="block text-accent">Microcontrollers &amp; its Application in Medicine</span>
         </h1>
+
         <p className="mt-4 max-w-2xl text-base text-text-muted-on-dark sm:text-lg">
           Run the manual&apos;s practical experiments — 8086 assembly, 8051 microcontroller programming, and
           more — directly in your browser, as open practice alongside the physical lab.
         </p>
+
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href="/#experiments"
-            className="rounded-lab bg-accent px-6 py-3 font-semibold text-brand-900 shadow-(--shadow) transition hover:brightness-95"
+            className="rounded-lab bg-accent px-6 py-3 font-semibold text-brand-900 shadow-(--shadow) transition hover:bg-accent-600"
           >
             Start Experiments
           </Link>
@@ -37,16 +46,28 @@ export default function Hero() {
           >
             Course Overview
           </Link>
+          <Link
+            href="/#curriculum"
+            className="rounded-lab border border-white/30 px-6 py-3 font-semibold text-text-on-dark transition hover:bg-white/10"
+          >
+            Curriculum
+          </Link>
         </div>
-        <dl className="mt-10 flex flex-wrap gap-8">
+
+        <dl className="mt-10 flex flex-wrap gap-4">
           {stats.map((s) => (
-            <div key={s.label}>
+            <div
+              key={s.label}
+              className="rounded-lab border border-white/15 bg-white/5 px-5 py-3 backdrop-blur"
+            >
               <dt className="text-sm text-text-muted-on-dark">{s.label}</dt>
-              <dd className="text-2xl font-semibold">{s.value}</dd>
+              <dd className="text-2xl font-semibold text-accent">{s.value}</dd>
             </div>
           ))}
         </dl>
       </div>
+
+      <WaveDivider />
     </section>
   );
 }

@@ -1,17 +1,26 @@
 @import 'tailwindcss';
 
-/* DLMS-matched design tokens — see docs/12_REDESIGN_BRIEF.md §1 */
+/* DLMS-matched design tokens — deep navy + gold accent, see
+   docs/14_QA_ROUND3_AND_DLMS_MATCH.md PART B / docs/12_REDESIGN_BRIEF.md §1 (v3). Token NAMES kept
+   stable from the v1 palette (brand-900/700/600/etc, accent, text-on-dark) even though the actual
+   navy/gold VALUES are new — every component already correctly uses these tokens for "the dark
+   brand color" / "the accent color" roles, so changing values in one place re-themes the whole
+   site without a component-by-component rename. */
 :root {
-  --brand-900: #002a5c;
-  --brand-700: #003b7a;
-  --brand-600: #0b4d94;
-  --brand-500: #1e5fa8;
-  --brand-100: #e7eef7;
-  --accent: #0aa1dc;
-  /* --accent as TEXT on a light background is only ~2.9:1 — fails WCAG AA even for large text
-     (3:1). --accent itself stays reserved for backgrounds/borders/icons/the scope trace, where it
-     isn't rendering text; use --accent-text (≈5.0:1) for any accent-colored text. */
-  --accent-text: #0678a3;
+  --brand-900: #0b2350; /* navy-900 */
+  --brand-800: #0e2a5e; /* navy-800 — hero gradient start */
+  --brand-700: #123a7a; /* navy-700 — hero gradient end, primary dark surface */
+  --brand-600: #1b4a95; /* navy-600 */
+  --brand-500: #2f5fb0;
+  --brand-100: #e6eaf5; /* light navy tint, for badges on light backgrounds */
+
+  --accent: #f0b429; /* gold — primary CTA, stat numbers, title line 2, on NAVY backgrounds */
+  --accent-600: #d99b12; /* gold hover/active */
+  /* --accent (gold) as TEXT on a *light* background is only ~1.9:1 — badly fails WCAG AA (gold is
+     a light color; it only reads well against a dark surface, ~8.2:1 on navy-900). Use
+     --accent-text (a darker amber, ~5.7:1) for gold-toned text on white/surface backgrounds
+     (eyebrow labels etc); use --accent itself only on navy/dark surfaces or as a background. */
+  --accent-text: #8a5a06;
 
   --bg: #ffffff;
   --surface: #f5f8fc;
@@ -21,8 +30,8 @@
   --text: #0f1b2d;
   --text-muted: #4a5b74;
   /* Guaranteed-legible text/icon color for dark sections (hero, footer) — QA round 2 C5 */
-  --text-on-dark: #ffffff;
-  --text-muted-on-dark: #c3d4ea;
+  --text-on-dark: #eaf1ff;
+  --text-muted-on-dark: #9db8e0;
 
   --ok: #1a9e6c;
   --warn: #e08a1e;
@@ -43,11 +52,13 @@
 /* Map tokens into Tailwind v4's theme so utilities like bg-brand-700, text-muted, etc. exist. */
 @theme inline {
   --color-brand-900: var(--brand-900);
+  --color-brand-800: var(--brand-800);
   --color-brand-700: var(--brand-700);
   --color-brand-600: var(--brand-600);
   --color-brand-500: var(--brand-500);
   --color-brand-100: var(--brand-100);
   --color-accent: var(--accent);
+  --color-accent-600: var(--accent-600);
   --color-accent-text: var(--accent-text);
 
   --color-bg: var(--bg);
@@ -81,6 +92,57 @@
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+}
+
+/* Hero starfield + faint grid + soft radial glow — doc 14 PART B.2 ("subtle animated background,
+   dark navy starfield/faint grid with a soft radial gradient"). Pure CSS (no canvas/JS) — small
+   repeating dot layers for "stars", a thin repeating linear-gradient for the grid, and one large
+   soft gold-tinted radial-gradient for the glow. The very slow pan respects prefers-reduced-motion
+   via the global animation-duration override above. */
+.hero-starfield {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.55) 100%, transparent),
+    radial-gradient(1px 1px at 90px 80px, rgba(255, 255, 255, 0.4) 100%, transparent),
+    radial-gradient(1.5px 1.5px at 150px 20px, rgba(255, 255, 255, 0.3) 100%, transparent),
+    radial-gradient(1px 1px at 60px 130px, rgba(255, 255, 255, 0.45) 100%, transparent),
+    radial-gradient(1px 1px at 190px 100px, rgba(255, 255, 255, 0.3) 100%, transparent),
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%);
+  background-size:
+    200px 160px,
+    200px 160px,
+    200px 160px,
+    200px 160px,
+    200px 160px,
+    40px 40px,
+    40px 40px,
+    100% 100%;
+  animation: hero-starfield-pan 90s linear infinite;
+}
+@keyframes hero-starfield-pan {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      200px 160px,
+      -200px 160px,
+      160px -200px,
+      -160px -200px,
+      200px 200px,
+      40px 40px,
+      -40px 40px,
+      0 0;
   }
 }
 

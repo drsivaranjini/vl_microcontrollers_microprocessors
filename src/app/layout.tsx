@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
+import { assets } from '@/lib/assets';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -39,11 +40,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <Nav />
+        <Nav srmLogo={assets.srmLogo} bmeLogo={assets.bmeLogo} />
         <main id="main" className="flex-1">
           {children}
         </main>
-        <Footer />
+        <Footer srmLogo={assets.srmLogo} bmeLogo={assets.bmeLogo} />
       </body>
     </html>
   );

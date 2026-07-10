@@ -1,6 +1,12 @@
 import Link from 'next/link';
+import Logos from './Logos';
 
-export default function Footer() {
+interface FooterProps {
+  srmLogo: string | null;
+  bmeLogo: string | null;
+}
+
+export default function Footer({ srmLogo, bmeLogo }: FooterProps) {
   const year = new Date().getFullYear();
 
   return (
@@ -8,9 +14,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-(--container-lab) gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
         <div>
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lab bg-white/10 text-sm font-bold">
-              SRM
-            </span>
+            <Logos srmLogo={srmLogo} bmeLogo={bmeLogo} size={36} onDark />
             <div className="leading-tight">
               <p className="font-semibold">21BMC302J Virtual Lab</p>
               <p className="text-sm text-text-muted-on-dark">Dept. of Biomedical Engineering</p>
@@ -25,6 +29,7 @@ export default function Footer() {
 
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-text-muted-on-dark">Quick links</p>
+          {/* Order matches the nav / section order — docs/14_QA_ROUND3_AND_DLMS_MATCH.md A2. */}
           <ul className="mt-3 space-y-2 text-sm">
             <li>
               <Link className="hover:text-accent" href="/#overview">
@@ -32,13 +37,18 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link className="hover:text-accent" href="/#curriculum">
-                Curriculum
+              <Link className="hover:text-accent" href="/#faculty">
+                Faculty
               </Link>
             </li>
             <li>
               <Link className="hover:text-accent" href="/#experiments">
                 Experiments
+              </Link>
+            </li>
+            <li>
+              <Link className="hover:text-accent" href="/#curriculum">
+                Curriculum
               </Link>
             </li>
             <li>
@@ -57,7 +67,9 @@ export default function Footer() {
                 srmist.edu.in ↗
               </a>
             </li>
-            <li>Course coordinator: to be added — see Faculty section.</li>
+            <li>
+              Course coordinator: <Link href="/#faculty" className="hover:text-accent">Dr. Sivaranjini S</Link>
+            </li>
           </ul>
         </div>
       </div>
