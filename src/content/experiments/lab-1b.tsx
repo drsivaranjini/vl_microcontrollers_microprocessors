@@ -15,18 +15,27 @@ export default function Content() {
             'Eight bytes starting at `1400H` are copied, one at a time, to a destination block starting at `1450H`. `CL` holds the count (8), `SI` walks the source block, `DI` walks the destination block. Each pass loads a byte via `LODSW` into `AL` (auto-incrementing `SI`), stores it at `[DI]`, advances `DI`, decrements the counter, and loops via `JNZ` while the counter is still nonzero.'
           }
         </P>
+        <blockquote>
+          <strong>Note on this listing:</strong> the manual&apos;s kit version copies real memory — `[SI]` to
+          `[DI]`, 8 bytes. Testing the embedded browser emulator directly found its assembler has{' '}
+          <strong>no <code>[address]</code>-style memory-operand addressing at all</strong> (every bracket
+          form — register-indirect, direct-absolute, label-based — is rejected as a syntax error), so a
+          literal source/destination memory block can&apos;t be expressed here. The listing below keeps the
+          exact same loop shape (`DEC CL` / `JNZ Back`, 8 iterations) and the exact same &quot;take a byte,
+          transfer it&quot; step, just with the byte held in a register instead of memory — so you can still
+          watch the counter/branch mechanics of the loop run to completion. The manual&apos;s own program is
+          left above as the reference version (verify the actual memory copy on the physical kit, or with a
+          tool that supports memory operands).
+        </blockquote>
       </section>
 
       <section>
         <h2>Registers / Instructions Used</h2>
         <RegistersTable
           rows={[
-            { m: 'MOV CL,08H', d: 'Set the loop counter to 8 (number of bytes to copy).' },
-            { m: 'MOV SI,1400H', d: 'Point the source index at the start of the source block.' },
-            { m: 'MOV DI,1450H', d: 'Point the destination index at the start of the destination block.' },
-            { m: 'LODSW', d: 'Load from `[SI]` into `AX` (`AL` holds the byte here); auto-increment `SI`.' },
-            { m: 'MOV [DI],AL', d: 'Store the low byte to the destination address.' },
-            { m: 'INC DI', d: 'Advance the destination pointer by one byte.' },
+            { m: 'MOV CL,0x08', d: 'Set the loop counter to 8 (number of transfers).' },
+            { m: 'MOV AL,0x2A', d: 'The byte being "transferred" each pass.' },
+            { m: 'MOV BL,AL', d: 'Stand-in for one byte moving from source to destination.' },
             { m: 'DEC CL', d: 'Decrement the remaining-byte counter.' },
             { m: 'JNZ Back', d: "Loop back while the counter hasn't reached zero." },
             { m: 'HLT', d: 'Halt — end of program.' },
@@ -39,7 +48,7 @@ export default function Content() {
         <SimulatorFrame
           title="8086 Emulator"
           src={emuSrc}
-          hint="Paste the program below, load 8 bytes at 1400H, assemble, then Run/Step and inspect memory from 1450H onward."
+          hint="Paste the program below into the assembler pane, click Compile, then Run and inspect BL and CL in the Reg panel (Run animates one instruction at a time — give it several seconds for all 8 loop passes)."
         />
       </section>
 
@@ -47,16 +56,14 @@ export default function Content() {
         <h2>Sample Program</h2>
         <CodeBlock
           lang="asm"
-          code={`MOV CL,08H     ; 8 bytes to copy
-MOV SI,1400H   ; source pointer
-MOV DI,1450H   ; destination pointer
+          code={`start:
+MOV CL, 0x08   ; 8 bytes to "transfer"
+MOV AL, 0x2A   ; the byte being transferred
 Back:
-LODSW          ; load byte at [SI] into AL, auto-increment SI
-MOV [DI],AL    ; store AL to destination
-INC DI         ; advance destination pointer
+MOV BL, AL     ; simulate one transfer step
 DEC CL         ; one fewer byte remaining
 JNZ Back       ; loop while CL != 0
-HLT            ; end of program`}
+HLT            ; inspect BL and CL`}
         />
       </section>
 
@@ -64,7 +71,7 @@ HLT            ; end of program`}
         <h2>Expected Output / Observation</h2>
         <P>
           {
-            'After running, the 8 bytes at `1450H`–`1457H` should be an exact copy of the 8 bytes originally at `1400H`–`1407H`.'
+            'After running, `CL` reaches `00H` (all 8 loop passes completed) and `BL` holds `2AH` — the transferred byte. On the physical kit, running the manual\'s original listing copies the 8 bytes at `1400H`–`1407H` to `1450H`–`1457H` exactly.'
           }
         </P>
       </section>

@@ -40,11 +40,22 @@ export default function Content() {
           / <code>JNC Loop1</code> jump straight back to the byte-loading label itself on a mismatch, which
           skips <code>DEC CH</code> on that pass — tracing it through shows that then scans past the
           intended 6-element array (<code>CH</code> ends up counting <em>matching</em> elements found, not
-          elements scanned, despite being initialised to the total count). The listing below instead jumps
-          to a label placed just before <code>DEC CH</code>/<code>JNZ</code>, so every pass decrements the
-          counter exactly once regardless of odd/even — this matches the manual&apos;s own stated
-          Input/Output table (3 evens + 3 odds from a clean 6-element array) exactly, which the literal{' '}
-          <code>JC Back</code>/<code>JNC Loop1</code> reading does not.
+          elements scanned, despite being initialised to the total count). The reference listing above
+          instead jumps to a label placed just before <code>DEC CH</code>/<code>JNZ</code>, so every pass
+          decrements the counter exactly once regardless of odd/even — this matches the manual&apos;s own
+          stated Input/Output table (3 evens + 3 odds from a clean 6-element array) exactly, which the
+          literal <code>JC Back</code>/<code>JNC Loop1</code> reading does not.
+        </blockquote>
+        <blockquote>
+          <strong>Note on running this in the embedded emulator:</strong> the manual&apos;s kit version scans
+          a 6-byte array in memory (`2000H`) and writes to two memory blocks (`2200H`/`2500H`). Testing the
+          embedded browser emulator directly found its assembler has{' '}
+          <strong>no <code>[address]</code>-style memory-operand addressing at all</strong> — every bracket
+          form is rejected as a syntax error — so a real array can&apos;t be scanned here. The runnable
+          listing below applies the identical classify-by-LSB technique (`ROR AL,CL` → test carry →{' '}
+          `ROL AL,CL` to restore) to two individual byte values instead of looping over an array, storing
+          the even result in `BX` and the odd result in `DX` so you can see the branch actually pick the
+          right destination. The manual&apos;s array-scanning listing is kept above as the reference version.
         </blockquote>
       </section>
 
@@ -53,12 +64,14 @@ export default function Content() {
         <SimulatorFrame
           title="8086 Emulator"
           src={emuSrc}
-          hint="Paste the program below, load a 6-byte array at 2000H, assemble, then Run/Step and inspect the even block at 2200H and the odd block at 2500H."
+          hint="Paste the runnable listing below into the assembler pane, click Compile, then Run and inspect BX (even result) and DX (odd result) in the Reg panel."
         />
       </section>
 
       <section>
         <h2>Sample Program</h2>
+
+        <h3>Manual&apos;s array-scanning listing (reference — needs memory-operand support)</h3>
         <CodeBlock
           lang="asm"
           code={`MOV CL,01H     ; rotate/test one bit at a time
@@ -92,16 +105,56 @@ DEC CH
 JNZ Loop1      ; loop until all elements scanned
 HLT            ; end of program`}
         />
+
+        <h3>Runnable in this emulator (register-only, same classify technique)</h3>
+        <CodeBlock
+          lang="asm"
+          code={`start:
+MOV CL, 0x01    ; rotate/test one bit at a time
+
+MOV AL, 0x04    ; value 1 (even)
+ROR AL,CL       ; LSB -> carry
+JNC even1       ; carry clear -> even
+ROL AL,CL       ; restore AL
+MOV DX, AX      ; odd result register
+JMP val2
+even1:
+ROL AL,CL       ; restore AL
+MOV BX, AX      ; even result register
+val2:
+
+MOV AL, 0x07    ; value 2 (odd)
+ROR AL,CL
+JNC even2
+ROL AL,CL
+MOV DX, AX
+JMP done
+even2:
+ROL AL,CL
+MOV BX, AX
+done:
+HLT             ; inspect BX (even) and DX (odd)`}
+        />
       </section>
 
       <section>
         <h2>Expected Output / Observation</h2>
-        <P>{'With the array `00,01,02,03,04,05` loaded at `2000H`:'}</P>
+        <P>{'On the physical kit, with the array `00,01,02,03,04,05` loaded at `2000H`:'}</P>
         <OutputTable
           headers={['Block', 'Address', 'Contents']}
           rows={[
             { cells: ['Even numbers', '`2200H`', '`00, 02, 04`'] },
             { cells: ['Odd numbers', '`2500H`', '`01, 03, 05`'] },
+          ]}
+        />
+        <P>
+          {'Running the register-only listing in the embedded emulator instead: '}
+        </P>
+        <OutputTable
+          headers={['Register', 'Value', 'Meaning']}
+          rows={[
+            { cells: ['`BX`', '`0004H`', 'Value 1 (`04H`), correctly classified even'] },
+            { cells: ['`DX`', '`0007H`', 'Value 2 (`07H`), correctly classified odd'] },
           ]}
         />
       </section>
