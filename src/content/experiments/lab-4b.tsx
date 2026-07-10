@@ -53,7 +53,10 @@ export default function Content() {
 
       <section>
         <h2>▶ Write, Assemble &amp; Run</h2>
-        <Editor8051 initialSource={sample} />
+        <Editor8051
+          initialSource={sample}
+          resultHint="this program writes its result to external memory (MOVX), not internal RAM — in the Memory panel, switch the dropdown from RAM to XRAM, then check 9200H (difference) and 9201H (borrow)."
+        />
       </section>
 
       <section>

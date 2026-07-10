@@ -9,11 +9,13 @@ const LOAD_ACK_TIMEOUT_MS = 5000;
 
 interface Editor8051Props {
   initialSource: string;
+  /** Where this program's result ends up, shown as a run hint below the toolbar (QA round 4, R4-3). */
+  resultHint?: string;
 }
 
 type Status = 'idle' | 'loading' | 'assembled' | 'assemble-error' | 'load-timeout' | 'load-failed';
 
-export default function Editor8051({ initialSource }: Editor8051Props) {
+export default function Editor8051({ initialSource, resultHint }: Editor8051Props) {
   const [source, setSource] = useState(initialSource);
   const [errors, setErrors] = useState<AssembleError[] | null>(null);
   const [status, setStatus] = useState<Status>('idle');
@@ -178,6 +180,17 @@ export default function Editor8051({ initialSource }: Editor8051Props) {
               <strong>Assemble &amp; Load</strong> again.
             </p>
           )}
+        </div>
+
+        <div className="rounded-lab border border-border bg-brand-100/40 px-3 py-2 text-xs text-text">
+          <strong>How to run:</strong> click a row in the emulator&apos;s instruction list below, then
+          press the <strong>▶|</strong> icon to step, or hold it to run continuously.
+          {resultHint ? (
+            <>
+              {' '}
+              <strong>Where to look:</strong> {resultHint}
+            </>
+          ) : null}
         </div>
 
         <iframe

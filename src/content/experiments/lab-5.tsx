@@ -58,10 +58,14 @@ export default function Content() {
       <section>
         <h2>▶ Write, Assemble &amp; Run</h2>
         <p className="mb-2 text-sm text-text-muted">
-          Load <code>03H</code> at external address <code>6500H</code> first (use the emulator&apos;s
-          memory panel), assemble &amp; load, then run.
+          Load <code>03H</code> at external address <code>6500H</code> first — in the emulator&apos;s
+          Memory panel, switch the dropdown from <strong>RAM</strong> to <strong>XRAM</strong> and edit
+          that cell — then assemble &amp; load, then run.
         </p>
-        <Editor8051 initialSource={sample} />
+        <Editor8051
+          initialSource={sample}
+          resultHint="results land in external memory (MOVX), not internal RAM — in the Memory panel, switch the dropdown from RAM to XRAM, then check 6501H (1's complement) and 6502H (2's complement)."
+        />
       </section>
 
       <section>
