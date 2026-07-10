@@ -84,12 +84,19 @@ export default function SimulatorFrame({
         className="simulator-frame-body flex flex-col gap-4 bg-surface p-4 [&:fullscreen]:h-screen [&:fullscreen]:overflow-auto"
       >
         {src && (
-          <iframe
-            src={src}
-            title={title}
-            loading="lazy"
-            className="h-[min(80vh,860px)] min-h-[480px] w-full rounded-lab border border-border [.simulator-frame-body:fullscreen_&]:h-full"
-          />
+          // R4-4: this emulator's own layout (editor + Reg/Segments/Pointers + Memory panels side
+          // by side) needs ~1100px+ to render without its panels overlapping/clipping. On narrower
+          // viewports, forcing the iframe to width:100% just squeezes that fixed layout instead of
+          // reflowing it -- so instead the iframe keeps its natural min-width and this wrapper
+          // scrolls horizontally, matching the "Open in new tab" escape hatch above as a fallback.
+          <div className="overflow-x-auto rounded-lab border border-border [.simulator-frame-body:fullscreen_&]:h-full">
+            <iframe
+              src={src}
+              title={title}
+              loading="lazy"
+              className="h-[min(80vh,860px)] min-h-[520px] w-full min-w-[1100px] [.simulator-frame-body:fullscreen_&]:h-full"
+            />
+          </div>
         )}
         {linkOutUrl && (
           <div className="flex min-h-[160px] flex-col items-center justify-center gap-4 rounded-lab border border-dashed border-border p-8 text-center">

@@ -193,12 +193,19 @@ export default function Editor8051({ initialSource, resultHint }: Editor8051Prop
           ) : null}
         </div>
 
-        <iframe
-          ref={iframeRef}
-          src={emuSrc}
-          title="i8051emu"
-          className="h-[min(70vh,720px)] min-h-[420px] w-full rounded-lab border border-border"
-        />
+        {/* R4-4: i8051emu's own layout (disassembly + RAM + Key Registers + Flags/Ports/External
+            Devices columns) needs ~1300px+ side by side; forcing width:100% on a narrower article
+            column squeezes that fixed layout instead of reflowing it. Let the iframe keep its
+            natural min-width and scroll this wrapper horizontally instead, same fix as the 8086
+            SimulatorFrame. */}
+        <div className="overflow-x-auto rounded-lab border border-border">
+          <iframe
+            ref={iframeRef}
+            src={emuSrc}
+            title="i8051emu"
+            className="h-[min(70vh,720px)] min-h-[460px] w-full min-w-[1300px]"
+          />
+        </div>
       </div>
     </div>
   );
