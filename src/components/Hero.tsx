@@ -15,7 +15,7 @@ export default function Hero() {
   ];
 
   return (
-    <section className="hero-starfield relative overflow-hidden bg-gradient-to-b from-brand-800 to-brand-700 text-text-on-dark">
+    <section className="hero-starfield relative overflow-hidden text-text-on-dark">
       <div className="relative mx-auto max-w-(--container-lab) px-4 py-16 sm:px-6 sm:py-20">
         <Logos srmLogo={assets.srmLogo} bmeLogo={assets.bmeLogo} onDark size={40} />
 

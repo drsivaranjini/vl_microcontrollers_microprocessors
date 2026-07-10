@@ -97,9 +97,16 @@
 
 /* Hero starfield + faint grid + soft radial glow — doc 14 PART B.2 ("subtle animated background,
    dark navy starfield/faint grid with a soft radial gradient"). Pure CSS (no canvas/JS) — small
-   repeating dot layers for "stars", a thin repeating linear-gradient for the grid, and one large
-   soft gold-tinted radial-gradient for the glow. The very slow pan respects prefers-reduced-motion
-   via the global animation-duration override above. */
+   repeating dot layers for "stars", a thin repeating linear-gradient for the grid, one large soft
+   gold-tinted radial-gradient for the glow, and the navy hero gradient itself as the bottom layer.
+   The navy gradient is folded IN HERE (not left as separate Tailwind gradient utility classes,
+   e.g. bg-gradient-to-b, from-brand-800, to-brand-700, on the element) because `background-image`
+   is a single non-additive property:
+   two classes at equal specificity both setting it just have one clobber the other depending on
+   cascade order, which is exactly how QA round 4 found the hero rendering pale/washed-out — the
+   Tailwind gradient utilities lost that race to this class. Keeping every layer in one declaration
+   makes the hero self-contained and immune to that ordering issue. The very slow pan respects
+   prefers-reduced-motion via the global animation-duration override above. */
 .hero-starfield {
   background-image:
     radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.55) 100%, transparent),
@@ -109,7 +116,8 @@
     radial-gradient(1px 1px at 190px 100px, rgba(255, 255, 255, 0.3) 100%, transparent),
     linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%);
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+    linear-gradient(to bottom, var(--brand-800), var(--brand-700));
   background-size:
     200px 160px,
     200px 160px,
@@ -118,6 +126,7 @@
     200px 160px,
     40px 40px,
     40px 40px,
+    100% 100%,
     100% 100%;
   animation: hero-starfield-pan 90s linear infinite;
 }
