@@ -64,7 +64,10 @@ export default function Content() {
 
       <section>
         <h2>▶ Write, Assemble &amp; Run</h2>
-        <Editor8051 initialSource={sample} />
+        <Editor8051
+          initialSource={sample}
+          resultHint="results land in internal RAM starting at 20H — the emulator's Memory panel already shows internal RAM by default (no dropdown switch needed here, unlike the external-memory experiments), so just scroll to address 20H."
+        />
       </section>
 
       <section>

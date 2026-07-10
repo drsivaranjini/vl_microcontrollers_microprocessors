@@ -29,10 +29,17 @@ def mcu_next_cycle():
 
 def mcu_reset_rom():
     m.reset_rom()
+    # virtual-lab patch: reset_rom()/reset_ram() rebuild m.mem as a fresh InternalDataMemory(),
+    # which drops any hook attached to the old instance -- re-attach so the port-write hook
+    # (Patch 6) survives Reset the same way xmem_write_hook already does (that one lives on `m`
+    # itself, which reset_rom/reset_ram never replace, so it never needed this). No-op before
+    # `_emit_port_write` exists (first call is always after module load finishes).
+    m.mem.port_write_hook = _emit_port_write
 
 
 def mcu_reset_ram():
     m.reset_ram()
+    m.mem.port_write_hook = _emit_port_write
 
 
 def mcu_set_seqKeyPressed():
@@ -235,8 +242,24 @@ def _emit_xmem_write(addr, value):
     )
 
 
+# virtual-lab patch: stream every whole-byte write to P0-P3 to the parent page the same way, for
+# port-driven peripheral widgets (LEDs, 7-seg, stepper). See PATCHES.md, Patch 6.
+def _emit_port_write(port_index, value):
+    window.parent.postMessage(
+        {
+            'kind': 'emu-write',
+            'bus': 'io',
+            'addr': port_index,
+            'value': value & 0xFF,
+            'tMs': window.performance.now(),
+        },
+        window.location.origin,
+    )
+
+
 m = mcu.Microcontroller()
 m.xmem_write_hook = _emit_xmem_write
+m.mem.port_write_hook = _emit_port_write
 m.load_hex_file(print8051hex)
 disassemble_to_window_assRows(print8051hex)
 mcu_update_window_all()
@@ -256,23 +279,58 @@ def _on_message(event):
         kind = data.kind
     except Exception:
         return
-    if kind != 'load-hex':
+
+    if kind == 'ping':
+        # virtual-lab patch: re-announce readiness on demand. The one-shot emu-ready broadcast
+        # below can still lose the race against the *parent's own* hydration -- if Next.js/React/
+        # CodeMirror take longer to load+hydrate than Brython takes to boot (very possible: the
+        # iframe's src starts loading immediately from the static SSR'd HTML, in parallel with,
+        # not after, the parent bundle), Editor8051.tsx's listener may not exist yet when this
+        # file finishes and posts its one-shot emu-ready. Confirmed live: emu-ready fires and is
+        # never missed by a *pre-attached* listener, but the real React effect (registered only
+        # after hydration) can still miss it. Fix: the parent retries a 'ping' every ~300ms until
+        # it sees emu-ready, and this fires straight back whenever asked, so the eventual retry
+        # always lands regardless of which side finished booting first. See PATCHES.md, Patch 8.
+        window.parent.postMessage({'kind': 'emu-ready'}, window.location.origin)
         return
-    hex_content = data.hex
-    # Ack back to the parent so it can tell "loaded" from "message never arrived" (e.g. this
-    # iframe hadn't finished loading/booting Brython yet when the parent posted) instead of
-    # silently declaring success while the emulator keeps running its previous program.
-    try:
-        mcu_reset_rom()
-        m.load_hex_file(hex_content)
-        disassemble_to_window_assRows(hex_content)
-        window.memType = 'RAM'
-        mcu_update_window_all()
-        window.render()
-    except Exception as exc:
-        window.parent.postMessage({'kind': 'hex-load-failed', 'message': str(exc)}, window.location.origin)
+
+    if kind == 'load-hex':
+        hex_content = data.hex
+        # Ack back to the parent so it can tell "loaded" from "message never arrived" (e.g. this
+        # iframe hadn't finished loading/booting Brython yet when the parent posted) instead of
+        # silently declaring success while the emulator keeps running its previous program.
+        try:
+            mcu_reset_rom()
+            m.load_hex_file(hex_content)
+            disassemble_to_window_assRows(hex_content)
+            window.memType = 'RAM'
+            mcu_update_window_all()
+            window.render()
+        except Exception as exc:
+            window.parent.postMessage({'kind': 'hex-load-failed', 'message': str(exc)}, window.location.origin)
+            return
+        window.parent.postMessage({'kind': 'hex-loaded'}, window.location.origin)
         return
-    window.parent.postMessage({'kind': 'hex-loaded'}, window.location.origin)
+
+    if kind == 'set-xmem':
+        # virtual-lab patch: seed a byte of external memory before Run, for experiments whose
+        # manual listing reads an input from a fixed XRAM address with no kit monitor to load it
+        # (e.g. Lab 5 reads the number to complement from 6500H). See PATCHES.md, Patch 7. This is
+        # an input seed, not a program-driven write, so it bypasses xmem_write_hook deliberately
+        # (a preset shouldn't be indistinguishable from something the running program itself
+        # wrote), then refreshes whichever panel is currently shown so a visible XRAM view updates
+        # immediately instead of only on the next step.
+        try:
+            addr = int(data.addr)
+            value = int(data.value) & 0xFF
+            m.xmem[addr] = value
+            mcu_update_window_all()
+            window.render()
+        except Exception as exc:
+            window.parent.postMessage({'kind': 'xmem-set-failed', 'message': str(exc)}, window.location.origin)
+            return
+        window.parent.postMessage({'kind': 'xmem-set', 'addr': addr, 'value': value}, window.location.origin)
+        return
 
 
 window.addEventListener('message', _on_message)

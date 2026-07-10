@@ -55,7 +55,8 @@ export default function Content() {
         <h2>▶ Write, Assemble &amp; Run</h2>
         <Editor8051
           initialSource={sample}
-          resultHint="this program writes its result to external memory (MOVX), not internal RAM — in the Memory panel, switch the dropdown from RAM to XRAM, then check 9200H (difference) and 9201H (borrow)."
+          resultHint="this program writes its result to external memory (MOVX) — see the External Memory panel below (or switch the emulator's own Memory dropdown from RAM to XRAM)."
+          peripherals={[{ kind: 'xmem', watch: [0x9200, 0x9201] }]}
         />
       </section>
 

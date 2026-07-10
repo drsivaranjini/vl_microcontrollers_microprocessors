@@ -58,13 +58,13 @@ export default function Content() {
       <section>
         <h2>▶ Write, Assemble &amp; Run</h2>
         <p className="mb-2 text-sm text-text-muted">
-          Load <code>03H</code> at external address <code>6500H</code> first — in the emulator&apos;s
-          Memory panel, switch the dropdown from <strong>RAM</strong> to <strong>XRAM</strong> and edit
-          that cell — then assemble &amp; load, then run.
+          The input byte (<code>03H</code>) is preloaded at external address <code>6500H</code>{' '}
+          automatically — see the External Memory panel below. Assemble &amp; load, then run.
         </p>
         <Editor8051
           initialSource={sample}
-          resultHint="results land in external memory (MOVX), not internal RAM — in the Memory panel, switch the dropdown from RAM to XRAM, then check 6501H (1's complement) and 6502H (2's complement)."
+          resultHint="results land in external memory (MOVX) — see the External Memory panel below (or switch the emulator's own Memory dropdown from RAM to XRAM)."
+          peripherals={[{ kind: 'xmem', watch: [0x6500, 0x6501, 0x6502], preset: [{ addr: 0x6500, value: 0x03 }] }]}
         />
       </section>
 

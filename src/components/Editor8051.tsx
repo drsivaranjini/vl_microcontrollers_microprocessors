@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { assemble8051, type AssembleError } from '@/lib/asm8051';
+import type { Peripheral } from '@/content/experiments/types';
+import PeripheralBench from './peripherals/PeripheralBench';
 
 const emuSrc = '/emu/8051/index.html';
 const LOAD_ACK_TIMEOUT_MS = 5000;
@@ -11,11 +13,13 @@ interface Editor8051Props {
   initialSource: string;
   /** Where this program's result ends up, shown as a run hint below the toolbar (QA round 4, R4-3). */
   resultHint?: string;
+  /** Peripheral widgets to render below the emulator (docs/17_PERIPHERAL_SUBSYSTEM_IMPLEMENTATION.md). */
+  peripherals?: Peripheral[];
 }
 
 type Status = 'idle' | 'loading' | 'assembled' | 'assemble-error' | 'load-timeout' | 'load-failed';
 
-export default function Editor8051({ initialSource, resultHint }: Editor8051Props) {
+export default function Editor8051({ initialSource, resultHint, peripherals = [] }: Editor8051Props) {
   const [source, setSource] = useState(initialSource);
   const [errors, setErrors] = useState<AssembleError[] | null>(null);
   const [status, setStatus] = useState<Status>('idle');
@@ -31,6 +35,17 @@ export default function Editor8051({ initialSource, resultHint }: Editor8051Prop
   // would previously vanish with zero feedback (assemble8051 itself was never the bug; this race
   // was — see docs/14_QA_ROUND3_AND_DLMS_MATCH.md A1). So we wait for an explicit ack handshake
   // instead of assuming the postMessage was received.
+  //
+  // A second, previously-unverified race lives on *this* side: app.py's one-shot 'emu-ready'
+  // broadcast fires as soon as Brython finishes booting, which can be *faster* than this parent
+  // page finishing hydration (the iframe's src starts loading straight from the static SSR'd
+  // HTML, in parallel with -- not after -- React/CodeMirror's own bundle loading), so this
+  // listener may not exist yet when it arrives, and the broadcast is never repeated. Confirmed by
+  // driving a real headless browser: the message mechanism itself is fine, but this effect can
+  // start after Brython's only announcement already came and went. Fixed with a ping/retry: send
+  // 'ping' to the iframe every 300ms until emu-ready is seen (or the iframe is gone); app.py
+  // answers any 'ping' with 'emu-ready' immediately (see PATCHES.md, Patch 8), so whichever side
+  // finishes booting second is guaranteed to still complete the handshake.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -39,6 +54,7 @@ export default function Editor8051({ initialSource, resultHint }: Editor8051Prop
       if (!data || typeof data !== 'object') return;
       if (data.kind === 'emu-ready') {
         setEmuReady(true);
+        clearInterval(pingInterval);
       } else if (data.kind === 'hex-loaded') {
         if (ackTimerRef.current) clearTimeout(ackTimerRef.current);
         setStatus('assembled');
@@ -49,7 +65,13 @@ export default function Editor8051({ initialSource, resultHint }: Editor8051Prop
       }
     };
     window.addEventListener('message', onMessage);
+
+    const pingInterval = setInterval(() => {
+      iframeRef.current?.contentWindow?.postMessage({ kind: 'ping' }, window.location.origin);
+    }, 300);
+
     return () => {
+      clearInterval(pingInterval);
       window.removeEventListener('message', onMessage);
       if (ackTimerRef.current) clearTimeout(ackTimerRef.current);
     };
@@ -206,6 +228,17 @@ export default function Editor8051({ initialSource, resultHint }: Editor8051Prop
             className="h-[min(70vh,720px)] min-h-[460px] w-full min-w-[1300px]"
           />
         </div>
+
+        {peripherals.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+              {status === 'assembled'
+                ? 'Program loaded — press Run below; outputs update live here.'
+                : 'Outputs (updates live once you Run the program below)'}
+            </p>
+            <PeripheralBench iframeRef={iframeRef} emuReady={emuReady} peripherals={peripherals} />
+          </div>
+        )}
       </div>
     </div>
   );

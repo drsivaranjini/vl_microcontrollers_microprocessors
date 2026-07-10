@@ -190,3 +190,123 @@ Fixed with an explicit three-message handshake, all still same-origin `postMessa
 This makes the three possible outcomes (assembled+loaded / assembly error / load didn't confirm) each
 produce a distinct, visible banner — "never fail silently" now holds structurally, not just for the
 error cases the code happens to anticipate.
+
+## Patch 6 (peripheral subsystem, `docs/17_...`) — `mcu.py`/`app.py`: port-write hook
+
+Sibling to patch 1's xmem hook, for port-driven peripherals (LEDs, 7-seg, stepper). Doc 17 calls this
+"Patch 4" — renumbered here to continue this file's own sequence rather than collide with patches 4/5
+above, which already existed when that doc was written.
+
+`InternalDataMemory.__setitem__` is the single choke point every whole-byte SFR write passes through
+(`MOV P1,A`, `MOV P1,#imm`, `MOV P1,direct`, `ANL`/`ORL`/`XRL P1,A`, ...) — unlike the three MOVX opcode
+handlers patch 1 modified individually, there's no small fixed set of port-write call sites to edit, so
+the hook lives in `__setitem__` itself, gated by a lookup table of the four port SFR addresses:
+
+```python
+class InternalDataMemory:
+    _PORT_SFR_ADDRS = {128: 0, 144: 1, 160: 2, 176: 3}  # 0x80/0x90/0xA0/0xB0 -> port index
+
+    def __init__(self):
+        ...
+        self.port_write_hook = None  # callback(port_index:int, value:int)
+
+    def __setitem__(self, addr, value):
+        self[addr].value = value
+        port_index = self._PORT_SFR_ADDRS.get(int(addr))
+        if port_index is not None and self.port_write_hook is not None:
+            self.port_write_hook(port_index, int(self[addr]))
+```
+
+**Known limitation:** this only observes whole-byte writes. Individual bit writes (`SETB P1.0`) go
+through `Byte.__setitem__` on the `Byte` object itself, not `InternalDataMemory.__setitem__`, so they
+don't fire this hook. No manual experiment in the current pilot needs bit-level port output; revisit if
+one does.
+
+`app.py` wires it the same way as the xmem hook, with `bus:'io'` and the port index as `addr`:
+
+```python
+def _emit_port_write(port_index, value):
+    window.parent.postMessage(
+        {'kind': 'emu-write', 'bus': 'io', 'addr': port_index, 'value': value & 0xFF,
+         'tMs': window.performance.now()},
+        window.location.origin,
+    )
+
+m.mem.port_write_hook = _emit_port_write
+```
+
+**Reset survival gotcha (found while writing this patch):** unlike `xmem_write_hook` (which lives on
+`m` itself, and `reset_rom`/`reset_ram` never replace `m`), `port_write_hook` lives on `m.mem`
+(`InternalDataMemory`) — and `reset_ram()` does `self.mem = InternalDataMemory()`, a **fresh instance**,
+which silently drops the hook on every Reset click. Fixed by re-attaching it inside `app.py`'s own
+`mcu_reset_rom`/`mcu_reset_ram` wrapper functions (the only call sites the UI and patch 4's `load-hex`
+handler use), right after calling through to `m.reset_rom()`/`m.reset_ram()`.
+
+Verified with a standalone smoke test (same style as patch 1): `m.mem[144] = 0xAB` fires the hook with
+`(1, 0xAB)` (port index 1, not the raw SFR address); addresses 128/160/176 map to ports 0/2/3;
+writing a non-port direct address (`0x30`) does not fire it; `reset_ram()` is confirmed to replace
+`m.mem` (motivating the re-attach in `app.py` rather than trusting the hook to survive on its own).
+
+## Patch 7 (peripheral subsystem, `docs/17_...`) — `app.py`: `set-xmem` preset handler
+
+Doc 17 calls this "Patch 5" (see the renumbering note in patch 6). Some manual experiments read an
+input from a fixed external-memory address with no kit monitor to preload it (Lab 5 reads the number to
+complement from `6500H`). Added a `set-xmem` case to the existing `_on_message` listener (patch 4),
+alongside `load-hex`, with the same origin check and the same never-fail-silently ack pattern:
+
+```python
+if kind == 'set-xmem':
+    try:
+        addr = int(data.addr)
+        value = int(data.value) & 0xFF
+        m.xmem[addr] = value
+        mcu_update_window_all()
+        window.render()
+    except Exception as exc:
+        window.parent.postMessage({'kind': 'xmem-set-failed', 'message': str(exc)}, window.location.origin)
+        return
+    window.parent.postMessage({'kind': 'xmem-set', 'addr': addr, 'value': value}, window.location.origin)
+```
+
+Writes via `m.xmem[addr] = value` directly (not `m._xmem_write`), deliberately bypassing
+`xmem_write_hook` — this is an input being *seeded* before the program runs, not something the program
+itself wrote, so it shouldn't be indistinguishable from a real `MOVX` write to any widget subscribed to
+`bus:'xmem'` writes (e.g. the `ExternalMemory` widget seeds its own displayed preset value directly from
+the `preset` prop it was given, rather than waiting to see its own seed echoed back as a write event).
+
+## Patch 8 (peripheral subsystem work) — `app.py`/`Editor8051.tsx`: a second, previously-unverified
+## `emu-ready` race — the parent page's own hydration can lose the race, not just the iframe's boot
+
+While building and *actually verifying in a real headless browser* (Playwright + Chromium, no system
+browser was available so its runtime libs were extracted from `apt-get download`'d `.deb`s with
+`dpkg-deb -x` rather than installed system-wide — the first time any session in this project's history
+has had real in-browser verification instead of static HTML/curl checks), found that the
+`emu-ready`/handshake described in patch 5 can still fail end-to-end, in a way patch 5 itself didn't
+anticipate: patch 5's fix only accounted for the *iframe* posting `load-hex` too early relative to its
+*own* boot. It didn't account for the reverse — Brython finishing its boot and posting its one-shot
+`emu-ready` **before the parent page itself has finished hydrating** enough for `Editor8051.tsx`'s
+`useEffect` to have registered its listener yet. This is a real race, not a hypothetical one: the
+iframe's `src` starts loading directly from the static SSR'd HTML the instant the browser parses that
+tag, in parallel with (not after) the parent's own React/Next.js/CodeMirror bundle downloading and
+hydrating — and there's no guarantee hydration finishes first. Confirmed by isolating the two
+suspects independently: (1) the underlying postMessage mechanism and the exact origin/source
+filtering `Editor8051.tsx` uses are both fine — a listener attached early enough (via
+`page.addInitScript`, before any page script runs) receives `emu-ready` correctly, origin and source
+matching; (2) the real component's effect-registered listener still never saw it across dozens of
+seconds on a fully fresh dev server + browser cache, which only makes sense if the broadcast arrived
+before that listener existed.
+
+**Fix:** turn the one-shot announcement into a retryable one. `_on_message` gains a `'ping'` case that
+immediately re-posts `{'kind': 'emu-ready'}` on demand:
+
+```python
+if kind == 'ping':
+    window.parent.postMessage({'kind': 'emu-ready'}, window.location.origin)
+    return
+```
+
+`Editor8051.tsx`'s effect starts a `setInterval` posting `{kind: 'ping'}` to the iframe every 300ms
+from the moment it mounts, and clears it as soon as an `emu-ready` is received (whether that's the
+retry's own response or the original one-shot broadcast, if timing happens to favor it). Whichever
+side finishes booting second, the handshake still completes — the fix doesn't depend on winning a race,
+it depends on eventually asking again.

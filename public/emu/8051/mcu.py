@@ -1334,6 +1334,10 @@ class Microcontroller:
 
 
 class InternalDataMemory:
+    # virtual-lab patch: SFR addresses of P0-P3, so whole-byte writes to a port
+    # can be routed to an optional host callback. See public/emu/8051/PATCHES.md, Patch 4.
+    _PORT_SFR_ADDRS = {128: 0, 144: 1, 160: 2, 176: 3}  # 0x80/0x90/0xA0/0xB0 -> port index
+
     def __init__(self):
         self._data = [Byte() for _ in range(256)]
         self._dptr = DoubleByte()
@@ -1346,12 +1350,22 @@ class InternalDataMemory:
         self.t1_previous_state = 1
         self.int0_previous_state = 1
         self.int1_previous_state = 1
+        # virtual-lab patch: optional callback(port_index:int, value:int) fired on every
+        # whole-byte write to P0-P3 (e.g. MOV P1,A), used to stream port writes out to the
+        # host page for peripheral widgets (LEDs, 7-seg, stepper, LCD). See PATCHES.md, Patch 4.
+        # Only catches whole-byte SFR writes (the common case for driving a peripheral) --
+        # individual bit writes (e.g. SETB P1.0) go through Byte's own __setitem__ and are not
+        # observed here.
+        self.port_write_hook = None
 
     def __getitem__(self, addr: Union[int, 'Byte']):
         return self._data[int(addr)]
 
     def __setitem__(self, addr, value: Union[int, 'Byte']):
         self[addr].value = value
+        port_index = self._PORT_SFR_ADDRS.get(int(addr))
+        if port_index is not None and self.port_write_hook is not None:
+            self.port_write_hook(port_index, int(self[addr]))
 
     @property
     def p0(self):
