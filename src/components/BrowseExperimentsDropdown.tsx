@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { experimentsByUnit } from '@/content/experiments/meta';
+import { isUnitReleased } from '@/lib/features';
 
-const unitTitles: Record<1 | 2, string> = {
+const unitTitles: Record<1 | 2 | 3 | 4, string> = {
   1: 'Unit 1 — 8086',
   2: 'Unit 2 — 8051',
+  3: 'Unit 3 — Interfacing',
+  4: 'Unit 4 — ARM',
 };
 
 // Top-bar-only navigation between experiments (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A6 — no
@@ -39,8 +42,9 @@ export default function BrowseExperimentsDropdown() {
       </button>
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-72 rounded-lab border border-border bg-bg p-3 shadow-(--shadow)">
-          {([1, 2] as const).map((unit) => {
-            const list = experimentsByUnit(unit).filter((e) => e.status === 'live');
+          {([1, 2, 3, 4] as const).map((unit) => {
+            if (!isUnitReleased(unit)) return null;
+            const list = experimentsByUnit(unit);
             if (list.length === 0) return null;
             return (
               <div key={unit} className="mb-3 last:mb-0">

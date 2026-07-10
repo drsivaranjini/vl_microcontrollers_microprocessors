@@ -1,4 +1,5 @@
 import { experimentsByUnit } from '@/content/experiments/meta';
+import { isUnitReleased } from '@/lib/features';
 import ExperimentCard from './ExperimentCard';
 
 const unitTitles: Record<1 | 2 | 3 | 4, string> = {
@@ -19,9 +20,10 @@ export default function ExperimentsGrid() {
         </p>
 
         {([1, 2, 3, 4] as const).map((unit) => {
-          // Pilot shows only released units (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A5) — no
-          // greyed/"coming soon" cards, Units 3-4 simply don't appear until released.
-          const list = experimentsByUnit(unit).filter((e) => e.status === 'live');
+          // Pilot shows only released units (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A5, docs/17 §7) —
+          // no greyed/"coming soon" cards, Units 3-4 simply don't appear until released.
+          if (!isUnitReleased(unit)) return null;
+          const list = experimentsByUnit(unit);
           if (list.length === 0) return null;
           return (
             <div key={unit} className="mt-10">

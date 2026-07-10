@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import BrowseExperimentsDropdown from './BrowseExperimentsDropdown';
 import Logos from './Logos';
-import { experimentsByUnit } from '@/content/experiments/meta';
+import { releasedExperiments } from '@/content/experiments/meta';
 
 // Nav order must equal section order on the home page (docs/14_QA_ROUND3_AND_DLMS_MATCH.md A2).
 const links = [
@@ -103,7 +103,7 @@ export default function Nav({ srmLogo, bmeLogo }: NavProps) {
           <div className="border-t border-border px-4 py-3">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Experiments</p>
             <ul className="flex flex-col gap-1 text-sm">
-              {([1, 2] as const).flatMap((unit) => experimentsByUnit(unit).filter((e) => e.status === 'live')).map((e) => (
+              {releasedExperiments.map((e) => (
                 <li key={e.id}>
                   <Link
                     href={`/experiments/${e.id}`}

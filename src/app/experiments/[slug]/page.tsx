@@ -1,11 +1,16 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ExperimentLayout from '@/components/ExperimentLayout';
-import { getExperiment, liveExperiments } from '@/content/experiments/meta';
+import { getExperiment, releasedExperiments } from '@/content/experiments/meta';
 import { experimentContent } from '@/content/experiments/registry';
+import { isUnitReleased } from '@/lib/features';
+
+// Any slug not returned by generateStaticParams below 404s statically -- a hidden unit's routes
+// are never built, never served, and never leak via a direct URL hit (docs/17_... §7.3).
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return liveExperiments.map((e) => ({ slug: e.id }));
+  return releasedExperiments.map((e) => ({ slug: e.id }));
 }
 
 export async function generateMetadata({
@@ -24,7 +29,9 @@ export default async function ExperimentPage({ params }: { params: Promise<{ slu
   const experiment = getExperiment(slug);
   const Content = experimentContent[slug];
 
-  if (!experiment || experiment.status !== 'live' || !Content) {
+  // Defense in depth beyond generateStaticParams/dynamicParams=false (docs/17_... §7.3): even if
+  // something ever called this with a hidden slug, it still refuses to render it.
+  if (!experiment || !isUnitReleased(experiment.unit) || !Content) {
     notFound();
   }
 
