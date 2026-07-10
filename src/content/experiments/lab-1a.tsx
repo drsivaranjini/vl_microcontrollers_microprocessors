@@ -12,24 +12,31 @@ export default function Content() {
         <h2>Theory</h2>
         <P>
           {
-            'The purpose of this experiment is to learn about the registers, instruction set, data-transfer operations, and control operations of the 8086. Two 16-bit numbers are stored in memory starting at `1500H`. The program loads each word into `AX` in turn (auto-incrementing the source pointer via `LODSW`), adds them, and stores the 16-bit sum at `1520H`. The **with-carry** variant also stores whatever carried out of the addition — `0000H` or `0001H` — at `1530H`.'
+            'The purpose of this experiment is to learn about the registers, instruction set, data-transfer operations, and control operations of the 8086. Two 16-bit numbers are added, and the 16-bit sum is kept in `BX`. The **with-carry** variant also records whatever carried out of the addition — `0000H` or `0001H` — in `CX`.'
           }
         </P>
+        <blockquote>
+          <strong>Note on this listing:</strong> the manual&apos;s kit version stores the two operands in
+          memory at <code>1500H</code>, loads them via <code>LODSW</code> (auto-incrementing `SI`), and
+          writes the sum/carry back to <code>1520H</code>/<code>1530H</code>. Testing against the embedded
+          browser emulator found it doesn&apos;t support <code>[address]</code>-style memory operands at
+          all (only registers and immediates), and its own default example never uses{' '}
+          <code>LODSW</code> either. The listing below keeps the same operands, the same `ADD`/`JNC`/`INC`
+          carry logic, and the same registers (`BX` for the sum, `CX` for the carry) — it just loads the
+          operands as immediates instead of from memory, so it actually runs here.
+        </blockquote>
       </section>
 
       <section>
         <h2>Registers / Instructions Used</h2>
         <RegistersTable
           rows={[
-            { m: 'MOV SI,1500H', d: 'Set source index register to the base address of the operands.' },
+            { m: 'MOV AX,0x0230', d: 'Load the first operand as an immediate into `AX`.' },
+            { m: 'MOV BX,0x0305', d: 'Load the second operand as an immediate into `BX`.' },
             { m: 'XOR CX,CX', d: 'Clear `CX`, used here to hold the carry (0 or 1).' },
-            { m: 'LODSW', d: 'Load the word at `DS:SI` into `AX`; auto-increment `SI` by 2.' },
-            { m: 'MOV BX,AX', d: 'Move the first operand from `AX` into `BX`.' },
             { m: 'ADD BX,AX', d: 'Add `AX` to `BX`; result and carry flag land in `BX`/flags.' },
-            { m: 'JNC Forward', d: 'Jump to `Forward` if the addition did **not** produce a carry.' },
+            { m: 'JNC done', d: 'Jump to `done` if the addition did **not** produce a carry.' },
             { m: 'INC CX', d: 'Increment `CX` (records a carry occurred).' },
-            { m: 'MOV DI,1520H', d: 'Set destination index to where the sum is stored.' },
-            { m: 'MOV [DI],AX', d: "Store the accumulator's value at the destination address." },
             { m: 'HLT', d: 'Halt the processor — end of program.' },
           ]}
         />
@@ -40,7 +47,7 @@ export default function Content() {
         <SimulatorFrame
           title="8086 Emulator"
           src={emuSrc}
-          hint="Paste the program below into the assembler pane, assemble, then Run/Step and inspect BX (sum), CX (carry), and memory at 1520H/1530H."
+          hint="Paste the program below into the assembler pane, click Compile, then Run and inspect BX (sum) and CX (carry) in the Reg panel (Run animates one instruction at a time — give it a few seconds to finish)."
         />
       </section>
 
@@ -50,42 +57,34 @@ export default function Content() {
         <h3>With carry</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV SI,1500H   ; Set source index as 1500H
-XOR CX,CX      ; Clear CX register (will hold carry)
-LODSW          ; Load data from source memory into AX & auto-increment SI
-MOV BX,AX      ; Move data from AX to BX
-LODSW          ; Load next word into AX & auto-increment SI
-ADD BX,AX      ; Add AX to BX; sum + carry flag in BX/flags
-JNC Forward    ; Jump if no carry
-INC CX         ; Increment CX (carry occurred)
-Forward:
-MOV DI,1520H   ; Set destination index as 1520H
-MOV [DI],BX    ; Move the result into 1520H
-MOV DI,1530H   ; Set destination index as 1530H
-MOV [DI],CX    ; Move the carry into 1530H
-HLT            ; End of program`}
+          code={`start:
+MOV AX, 0x0230  ; first operand
+MOV BX, 0x0305  ; second operand
+XOR CX, CX      ; CX will hold the carry
+ADD BX, AX      ; BX = sum; carry flag set on overflow
+JNC done        ; skip if no carry
+INC CX          ; record the carry
+done:
+HLT             ; inspect BX (sum) and CX (carry)`}
         />
 
         <h3>Without carry (practice)</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV SI,1500H   ; Set source index as 1500H
-LODSW          ; Load data from source memory into AX & auto-increment SI
-MOV BX,AX      ; Move data from AX to BX
-LODSW          ; Load next word into AX & auto-increment SI
-ADD BX,AX      ; Add AX to BX; sum in BX
-MOV DI,1520H   ; Set destination index as 1520H
-MOV [DI],BX    ; Move the result into 1520H
-HLT            ; End of program`}
+          code={`start:
+MOV AX, 0x0230
+MOV BX, 0x0305
+ADD BX, AX      ; BX = sum
+HLT             ; inspect BX`}
         />
       </section>
 
       <section>
         <h2>Expected Output / Observation</h2>
         <OutputTable
-          headers={['Operand 1', 'Operand 2', 'Sum (1520H)', 'Carry (1530H)']}
+          headers={['Operand 1', 'Operand 2', 'Sum (BX)', 'Carry (CX)']}
           rows={[
-            { cells: ['`0230H`', '`0305H`', '`0508H`', '`0000H`'] },
+            { cells: ['`0230H`', '`0305H`', '`0535H`', '`0000H`'] },
             { cells: ['`A2A2H`', '`A2A2H`', '`4544H`', '`0001H`'] },
           ]}
         />

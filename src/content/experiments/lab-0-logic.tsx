@@ -1,7 +1,7 @@
 import SimulatorFrame from '@/components/SimulatorFrame';
 import CodeBlock from '@/components/CodeBlock';
 import VivaAccordion from '@/components/VivaAccordion';
-import { P, RegistersTable } from '@/components/md';
+import { P, RegistersTable, OutputTable } from '@/components/md';
 
 // QA round 2 C1: deep-link straight to the 8086 emulator's editor route (HashRouter #/compile),
 // not its landing page.
@@ -19,19 +19,28 @@ export default function Content() {
         </P>
         <P>
           {
-            "**0-B — Arithmetic operations.** `ADD`/`SUB` require one operand in a register (here `AX`), with the other operand in a register, memory, or immediate. `MUL` performs unsigned multiplication: an 8-bit multiply produces a 16-bit result in `AX`; a 16-bit multiply produces a 32-bit result split across `DX:AX` (high word in `DX`, low word in `AX`). `DIV` divides `DX:AX` by the operand, leaving the quotient in `AX` and the remainder in `DX`."
+            "**0-B — Arithmetic operations.** `ADD`/`SUB` require one operand in a register (here `AX`), with the other operand in a register or immediate. `MUL` performs unsigned multiplication: an 8-bit multiply produces a 16-bit result in `AX`; a 16-bit multiply produces a 32-bit result split across `DX:AX` (high word in `DX`, low word in `AX`). `DIV` divides `DX:AX` by the operand, leaving the quotient in `AX` and the remainder in `DX`."
           }
         </P>
+        <blockquote>
+          <strong>Note on this listing:</strong> the manual&apos;s version loads operands from and stores
+          results to fixed memory addresses (<code>1100H</code>/<code>1200H</code>) via <code>MOV AX,[1100]</code>
+          -style bracket addressing. The embedded browser emulator&apos;s assembler doesn&apos;t support{' '}
+          <code>[address]</code> memory operands at all (confirmed by testing — every bracket form, including
+          register-indirect and <code>WORD PTR</code>, is rejected as a syntax error), only registers and
+          immediates. The programs below carry the same operands and instructions but keep them in registers
+          throughout, so they actually run here; check the result in the <strong>Reg</strong> panel instead of a
+          memory address.
+        </blockquote>
       </section>
 
       <section>
         <h2>Registers / Instructions Used</h2>
         <RegistersTable
           rows={[
-            { m: 'MOV AX,[1100]', d: 'Load the 16-bit word at memory address `1100H` into `AX`.' },
-            { m: 'AND AX,0F0F', d: 'Bitwise AND `AX` with the immediate mask `0F0FH`.' },
-            { m: 'OR AX,0F0F', d: 'Bitwise OR `AX` with the immediate `0F0FH`.' },
-            { m: 'MOV [1200],AX', d: 'Store `AX` to memory address `1200H`.' },
+            { m: 'MOV AX,0xAA55', d: 'Load the first operand as an immediate into `AX`.' },
+            { m: 'AND AX,0x0F0F', d: 'Bitwise AND `AX` with the immediate mask `0F0FH`.' },
+            { m: 'OR AX,0x0F0F', d: 'Bitwise OR `AX` with the immediate `0F0FH`.' },
             { m: 'ADD AX,BX', d: '16-bit addition; result in AX, carry/overflow reflected in flags.' },
             { m: 'SUB AX,BX', d: '16-bit subtraction; result in AX.' },
             { m: 'MUL BX', d: 'Unsigned multiply AX × BX; 32-bit result in `DX:AX`.' },
@@ -46,7 +55,7 @@ export default function Content() {
         <SimulatorFrame
           title="8086 Emulator"
           src={emuSrc}
-          hint="Paste any of the programs below into the assembler pane, assemble, then Run/Step and inspect AX/BX/DX and the destination memory address."
+          hint="Paste any of the programs below into the assembler pane, click Compile, then Run and watch AX/BX/DX in the Reg panel (Run animates one instruction at a time — give it a few seconds)."
         />
       </section>
 
@@ -56,71 +65,76 @@ export default function Content() {
         <h3>Logical AND (masking)</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, [1100]  ; load operand
-AND AX, 0F0F    ; mask: keep only the low nibble of each byte
-MOV [1200], AX  ; store result
-HLT`}
+          code={`start:
+MOV AX, 0xAA55  ; operand
+AND AX, 0x0F0F  ; mask: keep only the low nibble of each byte
+HLT             ; inspect AX`}
         />
 
         <h3>Logical OR (bit setting)</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, 0000    ; start from 0
-OR AX, 0F0F     ; set the low nibble of each byte
-MOV [1200], AX  ; store result
-HLT`}
+          code={`start:
+MOV AX, 0x0000  ; start from 0
+OR AX, 0x0F0F   ; set the low nibble of each byte
+HLT             ; inspect AX`}
         />
 
         <h3>Addition (without carry)</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, [1100]
-MOV BX, [1102]
+          code={`start:
+MOV AX, 0x0230
+MOV BX, 0x0305
 ADD AX, BX
-MOV [1200], AX
-HLT`}
+HLT             ; inspect AX`}
         />
 
         <h3>Subtraction (without borrow)</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, [1100]
-MOV BX, [1102]
+          code={`start:
+MOV AX, 0x0500
+MOV BX, 0x0230
 SUB AX, BX
-MOV [1200], AX
-HLT`}
+HLT             ; inspect AX`}
         />
 
         <h3>Multiplication</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, [1100]
-MOV BX, [1102]
+          code={`start:
+MOV AX, 0x0002
+MOV BX, 0x0003
 MUL BX          ; DX:AX = AX * BX
-MOV [1200], AX  ; low word
-MOV [1202], DX  ; high word
-HLT`}
+HLT             ; inspect DX (high) and AX (low)`}
         />
 
         <h3>Division</h3>
         <CodeBlock
           lang="asm"
-          code={`MOV AX, [1100]
-MOV BX, [1102]
+          code={`start:
+MOV DX, 0x0000  ; clear the dividend's high word first
+MOV AX, 0x0006
+MOV BX, 0x0002
 DIV BX          ; AX = quotient, DX = remainder
-MOV [1200], AX
-MOV [1202], DX
 HLT`}
         />
       </section>
 
       <section>
         <h2>Expected Output / Observation</h2>
-        <P>
-          {
-            'For the logical operations, write down the truth table of AND/OR before running, then confirm the masked/set result at `1200H` matches it. For the arithmetic operations, load two 16-bit operands at `1100H`/`1102H` before running and confirm the result at `1200H` (and `1202H` for MUL/DIV\'s second word).'
-          }
-        </P>
+        <OutputTable
+          headers={['Program', 'Result (Reg panel)']}
+          rows={[
+            { cells: ['AND (`0xAA55 & 0x0F0F`)', 'AX = `0A05H`'] },
+            { cells: ['OR (`0x0000 | 0x0F0F`)', 'AX = `0F0FH`'] },
+            { cells: ['ADD (`0230H + 0305H`)', 'AX = `0535H`'] },
+            { cells: ['SUB (`0500H − 0230H`)', 'AX = `02D0H`'] },
+            { cells: ['MUL (`2 × 3`)', 'DX:AX = `0000:0006H`'] },
+            { cells: ['DIV (`6 ÷ 2`)', 'AX = `0003H` (quotient), DX = `0000H` (remainder)'] },
+          ]}
+        />
       </section>
 
       <section>

@@ -12,25 +12,30 @@ export default function Content() {
         <h2>Theory</h2>
         <P>
           {
-            "Rather than a predefined array, this program sums the first `n` natural numbers, where `n` itself is read from memory at `2000H`. `BL` counts up from 1 while `CL` (initialised from `n`) counts down; each pass adds the current count (`BL`) into a running total (`AL`), increments `BL`, decrements `CL`, and loops via `JNZ` until `CL` reaches 0. The final sum is stored at `2002H`."
+            "This program sums the first `n` natural numbers. `BL` counts up from 1 while `CL` (initialised to `n`) counts down; each pass adds the current count (`BL`) into a running total (`AL`), increments `BL`, decrements `CL`, and loops via `JNZ` until `CL` reaches 0."
           }
         </P>
+        <blockquote>
+          <strong>Note on this listing:</strong> the manual&apos;s kit version reads `n` from memory at
+          <code>2000H</code> and stores the result at <code>2002H</code>. The embedded browser emulator
+          doesn&apos;t support <code>[address]</code> memory operands at all (confirmed by testing), so
+          this listing sets `n` as an immediate (<code>MOV CL,0x05</code>) instead of reading it from
+          memory and leaves the sum in `AL` instead of writing it out — the loop itself (`ADD`/`INC`/`DEC`/
+          `JNZ`) is exactly the manual&apos;s. To try a different `n`, edit that one immediate and re-run.
+        </blockquote>
       </section>
 
       <section>
         <h2>Registers / Instructions Used</h2>
         <RegistersTable
           rows={[
-            { m: 'MOV SI,2000H', d: 'Point at the memory location holding `n`.' },
-            { m: 'MOV CL,[SI]', d: 'Load `n` into `CL` as the loop counter.' },
-            { m: 'MOV AL,00H', d: 'Initialise the running sum to 0.' },
-            { m: 'MOV BL,01H', d: 'Initialise the counting value to 1.' },
+            { m: 'MOV CL,0x05', d: 'Set the loop counter to `n` (5, here).' },
+            { m: 'MOV AL,0x00', d: 'Initialise the running sum to 0.' },
+            { m: 'MOV BL,0x01', d: 'Initialise the counting value to 1.' },
             { m: 'ADD AL,BL', d: 'Add the current counting value into the running sum.' },
             { m: 'INC BL', d: 'Advance the counting value to the next number.' },
             { m: 'DEC CL', d: 'Decrement the remaining-iteration counter.' },
             { m: 'JNZ Back', d: 'Loop back while `CL != 0`.' },
-            { m: 'MOV DI,2002H', d: 'Point at where the result is stored.' },
-            { m: 'MOV [DI],AX', d: 'Store the final sum.' },
             { m: 'HLT', d: 'Halt — end of program.' },
           ]}
         />
@@ -41,7 +46,7 @@ export default function Content() {
         <SimulatorFrame
           title="8086 Emulator"
           src={emuSrc}
-          hint="Paste the program below, load n at 2000H (e.g. 05H), assemble, then Run/Step and inspect memory at 2002H."
+          hint="Paste the program below into the assembler pane, click Compile, then Run and inspect AL in the Reg panel (Run animates one instruction at a time — give it a few seconds to finish the loop)."
         />
       </section>
 
@@ -49,28 +54,26 @@ export default function Content() {
         <h2>Sample Program</h2>
         <CodeBlock
           lang="asm"
-          code={`MOV SI,2000H   ; point at n
-MOV CL,[SI]    ; CL = n
-MOV AL,00H     ; running sum = 0
-MOV BL,01H     ; first number to add
+          code={`start:
+MOV CL, 0x05   ; n
+MOV AL, 0x00   ; running sum = 0
+MOV BL, 0x01   ; first number to add
 Back:
 ADD AL,BL      ; sum += BL
 INC BL         ; next number
 DEC CL         ; one fewer iteration remaining
 JNZ Back       ; loop while CL != 0
-MOV DI,2002H   ; destination for result
-MOV [DI],AX    ; store the sum
-HLT            ; end of program`}
+HLT            ; inspect AL`}
         />
       </section>
 
       <section>
         <h2>Expected Output / Observation</h2>
         <OutputTable
-          headers={['n (at 2000H)', 'Sum 1+2+...+n (at 2002H)']}
+          headers={['n (CL immediate)', 'Sum 1+2+...+n (AL)']}
           rows={[
-            { cells: ['`05H`', '`0FH` (1+2+3+4+5 = 15)'] },
-            { cells: ['`04H`', '`0AH` (1+2+3+4 = 10)'] },
+            { cells: ['`0x05`', '`0FH` (1+2+3+4+5 = 15)'] },
+            { cells: ['`0x04`', '`0AH` (1+2+3+4 = 10)'] },
           ]}
         />
       </section>
@@ -88,8 +91,8 @@ HLT            ; end of program`}
               a: 'AL is 8-bit, so the sum can overflow past FFH (255) for large enough n (n=23 already sums to 276); the program does not check for or handle overflow.',
             },
             {
-              q: 'Why is n read from memory rather than hardcoded as an immediate value?',
-              a: 'Reading n from memory (2000H) lets the same assembled program sum a different count of numbers just by changing the input data, without reassembling the code.',
+              q: 'In the manual’s kit version, why is n read from memory rather than hardcoded as an immediate value?',
+              a: 'Reading n from memory (2000H) lets the same assembled program sum a different count of numbers just by changing the input data, without reassembling the code — the embedded browser emulator used here has no memory-operand addressing at all, so this listing hardcodes n as an immediate instead.',
             },
           ]}
         />
